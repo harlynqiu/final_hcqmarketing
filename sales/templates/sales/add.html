@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>New Sales Order</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ sale_form.as_p }}
+    {{ formset.management_form }}
+    <div id="sale-items">
+        {% for form in formset %}
+            {{ form.as_p }}
+        {% endfor %}
+    </div>
+    <button type="button" id="add-more" class="btn btn-primary">Add More Items</button>
+    <button type="submit" class="btn btn-success">Save</button>
+</form>
+{% endblock %}
