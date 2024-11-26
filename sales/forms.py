@@ -1,51 +1,35 @@
 from django import forms
-from django.apps import apps
+from django.forms import inlineformset_factory
 from .models import Sale, SaleItem
-from django.forms import modelformset_factory
-
-class SaleForm(forms.ModelForm):
+class SalesForm(forms.ModelForm):
+   
     class Meta:
         model = Sale
-        fields = ['customer_name', 'status']
+        fields = ['customer_name', 'total_cost','status', ] 
+        labels = {
+      
+            'customer_name': 'Customer Name',
+            'total_cost': 'Total',
+            'status': 'Status',
+            
+        }   
         widgets = {
-            'customer_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter customer name'
-            }),
-            'status': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+            'customer_name': forms.Select(attrs={'class': 'form-control'}),
+            'total_cost': forms.TextInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+
         }
 
-class SaleItemForm(forms.ModelForm):
-    class Meta:
-        model = SaleItem
-        fields = ['product', 'quantity', 'price_per_unit']
-        widgets = {
-            'product': forms.Select(attrs={
-                'class': 'form-select',
-                'required': 'required'
-            }),
-            'quantity': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'required': 'required'
-            }),
-            'price_per_unit': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'readonly': 'readonly'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Use apps.get_model to avoid circular import issues
-        Product = apps.get_model('inventory', 'Product')
-        self.fields['product'].queryset = Product.objects.all()
-
-# Inline formset for handling multiple SaleItems
-SaleItemFormSet = modelformset_factory(
+# Define the inline formset for SaleItem
+SaleItemFormSet = inlineformset_factory(
+    Sale,
     SaleItem,
-    fields=('product', 'quantity', 'price_per_unit'),
-    extra=1
+    fields=['product', 'quantity', 'price_per_unit'],
+    extra=1,  # Allows for an additional empty form in the set
+    can_delete=True,  # Allows items to be removed
+    widgets={
+        'product': forms.Select(attrs={'class': 'form-control'}),
+        'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+        'price_per_unit': forms.TextInput(attrs={'class': 'form-control'}),
+    }
 )

@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block body %}
@@ -11,10 +10,11 @@
 </div>
 {% endif %}
 
-<h3 class="m-4">Sales Orders</h3>
+<h3 class="m-4">New Sales</h3>
+
 <div class="row">
     <div class="col-12">
-        {% if sales %}
+        {% if employees %}
         <div class="card bg-light ms-4 me-4 mb-4">
             <div class="card-header"></div>
             <div class="card-body">
@@ -28,23 +28,22 @@
                                 <th scope="col">Date</th>
                                 <th scope="col">Total Cost</th>
                                 <th scope="col">Status</th>  
-                                
                             </tr>
                             </thead>
                             <tbody>
                                 {% for sales in sale %}
-                                    <tr>
-                                        <td>{{ sale.id }}</td>
-                                        <td>{{ sale.customer }}</td>
-                                        <td>{{ sale.date }}</td>
-                                        <td>{{ sale.total_cost }}</td>
-                                        <td>{{ sale.status }}</td>
-                                        <td>
-                                            <!-- Edit Button -->
-                                            <a href="{% url 'product_edit' product.id %}" class="btn btn-warning btn-sm">Edit</a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
+                                <tr>
+                                    <td>{{ sale.id }}</td>
+                                    <td>{{ sale.customer }}</td>
+                                    <td>{{ sale.date }}</td>
+                                    <td>{{ sale.total_cost }}</td>
+                                    <td>{{ sale.status }}</td>
+                                    <td>
+                                        <!-- Edit Button -->
+                                        <a href="{% url 'product_edit' product.id %}" class="btn btn-warning btn-sm">Edit</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -53,11 +52,13 @@
         </div>
 
         {% else %}
-            <h5 class="alert alert-primary ms-4 me-4"> No Product Records </h5>
+        <h5 class="alert alert-primary ms-4 me-4"> No Sales Records </h5>
         {% endif %}
     </div>
 </div> 
 
 {% endblock %}
+
+
 
 

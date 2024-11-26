@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .forms import SaleForm, SaleItemFormSet
+from django.db import transaction  # To ensure atomic transactions
+from .forms import SalesForm, SaleItemFormSet
 from .models import Sale, SaleItem
-from inventory.models import Product  # Assuming the product model is in the inventory app
+from inventory.models import Product  # Assuming the Product model is in the inventory app
 
 def index(request):
     """
@@ -16,37 +17,50 @@ def add(request):
     View to create a new sales order.
     """
     if request.method == 'POST':
-        sale_form = SaleForm(request.POST)
+        sale_form = SalesForm(request.POST)
         formset = SaleItemFormSet(request.POST)
 
         if sale_form.is_valid() and formset.is_valid():
-            # Save the sale
-            sale = sale_form.save()
+            try:
+                # Ensure all operations are atomic
+                with transaction.atomic():
+                    # Save the sale
+                    sale = sale_form.save()
 
-            # Save the sale items and update inventory
-            items = formset.save(commit=False)
-            for item in items:
-                item.sale = sale
-                item.save()
+                    # Save the sale items and update inventory
+                    items = formset.save(commit=False)
+                    for item in items:
+                        item.sale = sale
 
-                # Update inventory stock and check if there's enough stock
-                product = item.product
-                if product.stock >= item.quantity:
-                    product.stock -= item.quantity
-                    product.save()
-                else:
-                    # If not enough stock, roll back the sale and show an error message
-                    sale.delete()  # Optionally delete the sale to prevent inconsistencies
-                    messages.error(request, f'Not enough stock for {product.product_name}. Sale could not be completed.')
-                    return redirect('sales_add')  # Redirect to the add page again
+                        # Check inventory stock before saving
+                        product = item.product
+                        if product.stock < item.quantity:
+                            raise ValueError(f'Not enough stock for {product.product_name}.')
 
-            messages.success(request, 'Sale created successfully!')
-            return redirect('sales_index')  # Redirect to the sales list
+                        # Deduct the stock
+                        product.stock -= item.quantity
+                        product.save()
+
+                        # Save the sale item
+                        item.save()
+
+                    # Commit the formset deletions (if any)
+                    formset.save_m2m()
+
+                    messages.success(request, 'Sale created successfully!')
+                    return redirect('sales_index')  # Redirect to the sales list
+
+            except ValueError as e:
+                # Rollback transaction and show error message
+                messages.error(request, str(e))
+            except Exception as e:
+                # Handle unexpected errors
+                messages.error(request, 'An error occurred while processing the sale. Please try again.')
         else:
             messages.error(request, 'There were errors in your form submission.')
 
     else:
-        sale_form = SaleForm()
+        sale_form = SalesForm()
         formset = SaleItemFormSet()
 
     return render(request, 'sales/add.html', {
