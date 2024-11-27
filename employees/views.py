@@ -11,6 +11,12 @@ def employee_index(request):
         'employees': Employees.objects.all().order_by('id')
     })
 
+def employees_detail(request, pk):
+    # Ensure you're correctly fetching the employee
+    employee = get_object_or_404(Employees, pk=pk)
+
+    return render(request, 'employees/details.html', {'employee': employee})
+
 # View for adding a new employee
 def add(request):
     if request.method == 'POST':
@@ -25,6 +31,7 @@ def add(request):
         form = EmployeeForm()
 
     return render(request, 'employees/add.html', {'form': form})
+    
 
 def delete(request, id):
     employees = get_object_or_404(Employees, id=id)
