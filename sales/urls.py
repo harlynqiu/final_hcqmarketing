@@ -2,7 +2,15 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('sales/index', views.index, name='sales_index'),
-    path('sales/add/', views.add, name='new_sales_order_add'),
+    # URL for listing all sales
+    path('sales/', views.sales_list, name='sales_list'),
+    
+    # URL for creating a new sale
+    path('sales/create/', views.create_sale, name='create_sale'),
+    
+    # URL for editing an existing sale
+    path('sales/edit/<int:sale_id>/', views.edit_sale, name='edit_sale'),
+    
+    # Optional: URL for deleting a sale (if needed)
+    # path('sales/delete/<int:sale_id>/', views.delete_sale, name='delete_sale'),
 ]
-

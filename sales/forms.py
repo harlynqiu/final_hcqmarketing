@@ -1,35 +1,52 @@
 from django import forms
-from django.forms import inlineformset_factory
-from .models import Sale, SaleItem
-class SalesForm(forms.ModelForm):
-   
-    class Meta:
-        model = Sale
-        fields = ['customer_name', 'total_cost','status', ] 
-        labels = {
-      
-            'customer_name': 'Customer Name',
-            'total_cost': 'Total',
-            'status': 'Status',
-            
-        }   
-        widgets = {
-            'customer_name': forms.Select(attrs={'class': 'form-control'}),
-            'total_cost': forms.TextInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-control'}),
+from .models import Sales, SalesItem, Payment
+from inventory.models import Product, Customer
+from django.forms import modelformset_factory
 
+# Sales Form for main sale details
+class SalesForm(forms.ModelForm):
+    class Meta:
+        model = Sales
+        fields = ['customer', 'sales_code', 'status']
+        
+        labels = {
+            'customer': 'Customer Name',
+            'status': 'Status',
+        }
+        
+        widgets = {
+            'customer': forms.Select(attrs={'class': 'form-control'}),  # Use Select widget for customer
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'sales_code': forms.TextInput(attrs={'readonly': True}),
+        }
+    
+    customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),  # Ensure queryset pulls from Customer model
+        empty_label="Select Customer",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+# SalesItem Form for each product in the sale
+class SalesItemForm(forms.ModelForm):
+    class Meta:
+        model = SalesItem
+        fields = ['product', 'quantity', 'price_per_item']  # Include any other necessary fields
+
+    # Customizing form fields if needed
+    product = forms.ModelChoiceField(queryset=Product.objects.all(), widget=forms.Select(attrs={'class': 'form-control'}))
+    quantity = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    price_per_item = forms.DecimalField(max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+
+# Payment Form for handling payment-related details
+class PaymentForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['amount_paid', 'payment_method', 'payment_status']
+        widgets = {
+            'amount_paid': forms.NumberInput(attrs={'class': 'form-control'}),
+            'payment_method': forms.Select(attrs={'class': 'form-control'}),
+            'payment_status': forms.Select(attrs={'class': 'form-control'}),
         }
 
-# Define the inline formset for SaleItem
-SaleItemFormSet = inlineformset_factory(
-    Sale,
-    SaleItem,
-    fields=['product', 'quantity', 'price_per_unit'],
-    extra=1,  # Allows for an additional empty form in the set
-    can_delete=True,  # Allows items to be removed
-    widgets={
-        'product': forms.Select(attrs={'class': 'form-control'}),
-        'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
-        'price_per_unit': forms.TextInput(attrs={'class': 'form-control'}),
-    }
-)
+# Formset for managing multiple SalesItems dynamically
+SalesItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1)
