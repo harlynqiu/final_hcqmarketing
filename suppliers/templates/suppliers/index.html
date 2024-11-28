@@ -31,6 +31,7 @@
                                 <th scope="col">Contact</th>
                                 <th scope="col">Date Started</th>
                                 <th scope="col">Date Edited</th>
+                                <th scope="col">Status</th>
                                 
                             </tr>
                             </thead>
@@ -46,6 +47,7 @@
                                         <td>{{ supplier.contact_num}}</td>
                                         <td>{{ supplier.dateStart}}</td>
                                         <td>{{ supplier.dateEdit}}</td>
+                                        <td>{{ supplier.status}}</td>
                                         <td> 
                                             <form action="{% url 'supplier_edit' supplier.id %}" method="post" style="display:inline;"> 
                                                 {% csrf_token %}
