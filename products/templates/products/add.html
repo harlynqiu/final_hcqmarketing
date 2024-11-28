@@ -1,28 +1,153 @@
 {% extends "base.html" %}
 
-
 {% block body %}
-    <h3 class ="text-center m-4">Add Product</h3>
-    {% if success %}
-        <div class = "alert alert-success" role = "alert">
-        Product Added Successfully 
-        <a href = "{% url 'products_index' %}" class = "alert-link"> Products Page </a>
-        </div>
-    {% else %}
-        <div class = "row justify-content-center">
-            <div class ="col-6">
-                <div class="card bg-secondary mb-3">
-                    <div class="card-header">New Product</div>
-                    <div class="card-body">
-                        <form action = "{% url 'add_product' %}" method = "POST">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button type = "submit" class = "btn btn-primary">Add</button>
-                            <a href = "{% url 'index' %}" class = "btn btn-secondary">Cancel </a>
-                        </form>
-                    </div>
-                </div>
+<h3 class="m-4">New Product</h3>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light ms-4 me-4 mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Product Details</h5>
             </div>
-        </div>        
-    {% endif %}
+            <div class="card-body">
+                {% if success %}
+                <!-- Success Alert -->
+                <div class="alert alert-success" role="alert">
+                    Product Added Successfully!
+                    <a href="{% url 'products_index' %}" class="alert-link">Go to Products Page</a>
+                </div>
+                {% else %}
+                <form action="{% url 'add_product' %}" method="POST">
+                    {% csrf_token %}
+
+                    <!-- Display form errors if any -->
+                    {% if form.errors %}
+                    <ul style="color: red;">
+                        {% for field, errors in form.errors.items %}
+                        <li><strong>{{ field }}:</strong>
+                            {% for error in errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    <!-- Product Form Fields -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Product Name -->
+                            <div class="mb-3">
+                                <label for="{{ form.product_name.id_for_label }}" class="form-label">{{ form.product_name.label }}</label>
+                                {{ form.product_name }}
+                                {% if form.product_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.product_name.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Description -->
+                            <div class="mb-3">
+                                <label for="{{ form.product_descript.id_for_label }}" class="form-label">{{ form.product_descript.label }}</label>
+                                {{ form.product_descript }}
+                                {% if form.product_descript.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.product_descript.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Code -->
+                            <div class="mb-3">
+                                <label for="{{ form.product_code.id_for_label }}" class="form-label">{{ form.product_code.label }}</label>
+                                {{ form.product_code }}
+                                {% if form.product_code.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.product_code.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Price -->
+                            <div class="mb-3">
+                                <label for="{{ form.product_price.id_for_label }}" class="form-label">{{ form.product_price.label }}</label>
+                                {{ form.product_price }}
+                                {% if form.product_price.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.product_price.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+
+                            <!-- Product Unit -->
+                            <div class="mb-3">
+                                <label for="{{ form.product_unit.id_for_label }}" class="form-label">{{ form.product_unit.label }}</label>
+                                {{ form.product_unit }}
+                                {% if form.product_unit.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.product_unit.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+
+                            <!-- Purchase Price -->
+                            <div class="mb-3">
+                                <label for="{{ form.purchase_price.id_for_label }}" class="form-label">{{ form.purchase_price.label }}</label>
+                                {{ form.purchase_price }}
+                                {% if form.purchase_price.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.purchase_price.errors %}
+                                    <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Date Started -->
+                            <div class="mb-3">
+                                <label for="{{ form.dateStart.id_for_label }}" class="form-label">{{ form.dateStart.label }}</label>
+                                {{ form.dateStart }}
+                                {% if form.dateStart.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.dateStart.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+    
+                        </div>
+                    </div>
+
+                    
+                </div>
+
+
+                    <!-- Submit and Cancel Buttons -->
+                    <div class="mb-3 text-center">
+                        <button type="submit" class="btn btn-primary">Add Product</button>
+                        <a href="{% url 'products_index' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

@@ -5,14 +5,7 @@ from inventory.models import Customer
 
 
 
-class Customer(models.Model):
-    customer_hardware = models.CharField(max_length=100, default='Unknown')  # Provide a default value
-    name = models.CharField(max_length=100)
-    email = models.EmailField()
-    # Other fields
 
-    def __str__(self):
-        return self.customer_hardware 
 
 class Sales(models.Model):
     Sales_Status = [
@@ -27,14 +20,15 @@ class Sales(models.Model):
         ('Partial', 'Partial'),
     ]
 
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE,related_name='sale')
     date = models.DateTimeField(default=timezone.now)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     sales_code = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=50, choices=Sales_Status, default='Pending')
     payment_status = models.CharField(max_length=50, choices=Sales_Payment, default='Unpaid')
 
-    
+
+ 
 
     def calculate_total_amount(self):
         """Calculate the total sale amount from the items."""

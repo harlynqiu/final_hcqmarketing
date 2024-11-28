@@ -33,91 +33,75 @@
                     </ul>
                     {% endif %}
 
-                    <!-- Sales Form Fields -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <!-- Customer Hardware Selection -->
+                    <div class="card-body">
+                        <!-- Customer Dropdown -->
+                        <div class="mb-3">
+                            <label for="id_customer" class="form-label">Customer</label>
                             <select name="customer" id="id_customer" class="form-select" required>
                                 <option value="" selected disabled>Select Customer</option>
                                 {% for customer in customers %}
                                     <option value="{{ customer.id }}">
-                                        {{ customer.customer_hardware }}  <!-- Display the customer_hardware field -->
+                                        {{ customer.customer_hardware }} ({{ customer.first_name }} {{ customer.last_name }})
                                     </option>
                                 {% endfor %}
                             </select>
-
-                            <!-- Sales Status -->
-                            <div class="mb-3">
-                                <label for="{{ sale_form.status.id_for_label }}" class="form-label">{{ sale_form.status.label }}</label>
-                                {{ sale_form.status }}
-                                {% if sale_form.status.errors %}
-                                <div class="text-danger">
-                                    {% for error in sale_form.status.errors %}
-                                    <small>{{ error }}</small><br>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Total Cost -->
-                            <div class="mb-3">
-                                <label for="{{ sale_form.total_cost.id_for_label }}" class="form-label">{{ sale_form.total_cost.label }}</label>
-                                {{ sale_form.total_cost }}
-                                {% if sale_form.total_cost.errors %}
-                                <div class="text-danger">
-                                    {% for error in sale_form.total_cost.errors %}
-                                    <small>{{ error }}</small><br>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                            </div>
                         </div>
-                    </div>
+                        <!-- Status Dropdown (new field) -->
+                        <div class="mb-3">
+                            <label for="id_status" class="form-label">Status</label>
+                            <select name="status" id="id_status" class="form-select">
+                                <option value="Pending" selected>Pending</option>
+                                <option value="Partially Delivered">Partially Delivered</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
 
-                    <!-- Sale Items Container -->
-                    <div id="sale-items" class="mb-3">
-                        <h5 class="card-title">Products</h5>
+                        <!-- Sale Items Container -->
+                        <div id="sale-items" class="mb-3">
+                            <h5 class="card-title">Products</h5>
 
-                        <!-- Hidden Input for Django Formset Management -->
-                        {{ formset.management_form }}
-                        
-                        {% for form in formset %}
-                        <div class="sale-item mb-3" id="item-{{ forloop.counter0 }}">
-                            <div class="row">
-                                <!-- Product Dropdown -->
-                                <div class="col-md-4">
-                                    <label class="form-label">Product</label>
-                                    {{ form.product }}
-                                </div>
+                            <!-- Hidden Input for Django Formset Management -->
+                            {{ formset.management_form }}
+                            
+                            {% for form in formset %}
+                            <div class="sale-item mb-3" id="item-{{ forloop.counter0 }}">
+                                <div class="row">
+                                    <!-- Product Dropdown -->
+                                    <div class="col-md-4">
+                                        <label class="form-label">Product</label>
+                                        {{ form.product }}
+                                    </div>
 
-                                <!-- Quantity Input -->
-                                <div class="col-md-4">
-                                    <label class="form-label">Quantity</label>
-                                    {{ form.quantity }}
-                                </div>
+                                    <!-- Quantity Input -->
+                                    <div class="col-md-4">
+                                        <label class="form-label">Quantity</label>
+                                        {{ form.quantity }}
+                                    </div>
 
-                                <!-- Price Input -->
-                                <div class="col-md-3">
-                                    <label class="form-label">Price</label>
-                                    {{ form.price_per_item }}
-                                </div>
+                                    <!-- Price Input -->
+                                    <div class="col-md-3">
+                                        <label class="form-label">Price</label>
+                                        {{ form.price_per_item }}
+                                    </div>
 
-                                <!-- Delete Button -->
-                                <div class="col-md-1 d-flex align-items-end">
-                                    <button type="button" class="btn btn-danger btn-sm delete-row">X</button>
+                                    <!-- Delete Button -->
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger btn-sm delete-row">X</button>
+                                    </div>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                    </div>
 
-                    <!-- Add More Products Button -->
-                    <button type="button" id="add-more" class="btn btn-primary mb-3">Add More Products</button>
+                        <!-- Add More Products Button -->
+                        <button type="button" id="add-more" class="btn btn-primary mb-3">Add More Products</button>
 
-                    <!-- Submit Button -->
-                    <div class="mb-3 text-center">
-                        <button type="submit" class="btn btn-success">Save Sale</button>
-                        <a href="{% url 'sales_list' %}" class="btn btn-secondary">Cancel</a>
+                        <!-- Submit Button -->
+                        <div class="mb-3 text-center">
+                            <button type="submit" class="btn btn-success">Save Sale</button>
+                            <a href="{% url 'sales_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
                     </div>
                 </form>
                 {% endif %}

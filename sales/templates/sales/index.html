@@ -36,7 +36,8 @@
                             {% for sale in sales %}
                             <tr>
                                 <td>{{ sale.id }}</td>
-                                <td>{{ sale.customer }}</td>  <!-- Use first_name and last_name -->
+                                <td>{{ sale.customer.customer_hardware }}</td>
+                                
                                 <td>{{ sale.date }}</td>
                                 <td>{{ sale.total_cost }}</td>  <!-- Ensure this matches the field in your model -->
                                 <td>{{ sale.status }}</td>

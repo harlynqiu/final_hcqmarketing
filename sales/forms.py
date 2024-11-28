@@ -15,11 +15,11 @@ class SalesForm(forms.ModelForm):
         }
         
         widgets = {
-            'customer': forms.Select(attrs={'class': 'form-control'}),  # Use Select widget for customer
-            'status': forms.Select(attrs={'class': 'form-control'}),
             'sales_code': forms.TextInput(attrs={'readonly': True}),
+            'customer': forms.Select(attrs={'class': 'form-control'}),  # Use Select widget for customer
+            'status': forms.Select(attrs={'class': 'form-control'}),  # Select widget for status
         }
-    
+
     customer = forms.ModelChoiceField(
         queryset=Customer.objects.all(),  # Ensure queryset pulls from Customer model
         empty_label="Select Customer",
@@ -33,9 +33,19 @@ class SalesItemForm(forms.ModelForm):
         fields = ['product', 'quantity', 'price_per_item']  # Include any other necessary fields
 
     # Customizing form fields if needed
-    product = forms.ModelChoiceField(queryset=Product.objects.all(), widget=forms.Select(attrs={'class': 'form-control'}))
-    quantity = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    price_per_item = forms.DecimalField(max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    product = forms.ModelChoiceField(
+        queryset=Product.objects.all(), 
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    quantity = forms.IntegerField(
+        min_value=1, 
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    price_per_item = forms.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
 
 # Payment Form for handling payment-related details
 class PaymentForm(forms.ModelForm):
@@ -49,4 +59,9 @@ class PaymentForm(forms.ModelForm):
         }
 
 # Formset for managing multiple SalesItems dynamically
-SalesItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1)
+SalesItemFormSet = modelformset_factory(
+    SalesItem, 
+    form=SalesItemForm, 
+    extra=1,  # Number of extra empty forms to display by default
+    can_delete=True  # Allow deleting items from formset
+)
