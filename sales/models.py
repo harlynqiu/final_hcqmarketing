@@ -25,7 +25,7 @@ class Sales(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     sales_code = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=50, choices=Sales_Status, default='Pending')
-    payment_status = models.CharField(max_length=50, choices=Sales_Payment, default='Unpaid')
+    payment_stat = models.CharField(max_length=50, choices=Sales_Payment, default='Unpaid')
 
 
  

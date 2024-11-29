@@ -7,24 +7,25 @@ from django.forms import modelformset_factory
 class SalesForm(forms.ModelForm):
     class Meta:
         model = Sales
-        fields = ['customer', 'sales_code', 'status']
+        fields = ['customer', 'status', 'payment_stat']
         
         labels = {
             'customer': 'Customer Name',
-            'status': 'Status',
+            'status': 'Sale Status',
+            'payment_stat': 'Payment Status',
         }
         
         widgets = {
-            'sales_code': forms.TextInput(attrs={'readonly': True}),
-            'customer': forms.Select(attrs={'class': 'form-control'}),  # Use Select widget for customer
-            'status': forms.Select(attrs={'class': 'form-control'}),  # Select widget for status
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'payment_stat': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    customer = forms.ModelChoiceField(
-        queryset=Customer.objects.all(),  # Ensure queryset pulls from Customer model
-        empty_label="Select Customer",
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
+        customer = forms.ModelChoiceField(
+            queryset=Customer.objects.all(),  # Ensure queryset pulls from Customer model
+            empty_label="Select Customer",
+            widget=forms.Select(attrs={'class': 'form-control'})
+        )
+
 
 # SalesItem Form for each product in the sale
 class SalesItemForm(forms.ModelForm):

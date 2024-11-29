@@ -1,88 +1,97 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
-from .models import Sales, SalesItem, Customer, Product
-from .forms import SalesForm, SalesItemForm
 from django.forms import modelformset_factory
 from django.contrib import messages
+from .models import Sales, SalesItem, Customer, Product
+from .forms import SalesForm, SalesItemForm
 
-# Create Sales
+# Create Sale
 def create_sale(request):
+    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1, can_delete=True)  # Allow deletion of formset items
     sale_form = SalesForm(request.POST or None)
-    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1)
-
-    customers = Customer.objects.all()  # Ensure all customers are retrieved
+    formset = SaleItemFormSet(request.POST or None, queryset=SalesItem.objects.none())  # Initialize empty formset
+    customers = Customer.objects.all()
 
     if request.method == 'POST':
-        if sale_form.is_valid():
+        if sale_form.is_valid() and formset.is_valid():
+            # Save sale instance
             sale = sale_form.save(commit=False)
             sale.save()
 
-            formset = SaleItemFormSet(request.POST)
-            if formset.is_valid():
-                for form in formset:
+            # Process each form in the formset
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):  # Ensure valid and not marked for deletion
                     sale_item = form.save(commit=False)
-                    sale_item.sales = sale
+                    sale_item.sales = sale  # Link sale_item to the sale
                     sale_item.save()
 
-                # Calculate the total cost
-                sale.total_cost = sum(item.price_per_unit * item.quantity for item in sale.salesitem_set.all())
-                sale.save()
+            # Update the total cost
+            sale.total_cost = sum(item.price_per_unit * item.quantity for item in sale.salesitem_set.all())
+            sale.save()
 
-                messages.success(request, 'Sale has been successfully created!')
-                return redirect('sales_list')  # Redirect to the sales list view
+            messages.success(request, 'Sale has been successfully created!')
+            return redirect('sales_list')  # Redirect to sales list
 
-    else:
-        formset = SaleItemFormSet(queryset=SalesItem.objects.none())
+        else:
+            messages.error(request, 'There was an error creating the sale. Please check the details.')
 
     return render(request, 'sales/add.html', {
         'sale_form': sale_form,
         'formset': formset,
-        'customers': customers  # Pass the customers here
+        'customers': customers,
     })
 
 # List of all Sales
 def sales_list(request):
-    sales = Sales.objects.all()  # Get all sales
+    sales = Sales.objects.all()  # Retrieve all sales
     return render(request, 'sales/index.html', {
-        'sales': sales
+        'sales': sales,
     })
 
-# Edit Sales (Optional: if you want to allow editing of existing sales)
+# Edit Sale
 def edit_sale(request, sale_id):
-    sale = Sales.objects.get(id=sale_id)
+    sale = get_object_or_404(Sales, id=sale_id)
+    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=0, can_delete=True)  # Editable formset
     sale_form = SalesForm(request.POST or None, instance=sale)
-
-    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, queryset=SalesItem.objects.filter(sales=sale))
+    formset = SaleItemFormSet(request.POST or None, queryset=SalesItem.objects.filter(sales=sale))
 
     if request.method == 'POST':
-        if sale_form.is_valid():
+        if sale_form.is_valid() and formset.is_valid():
+            # Save the sale instance
             sale = sale_form.save(commit=False)
             sale.save()
 
-            formset = SaleItemFormSet(request.POST)
-            if formset.is_valid():
-                for form in formset:
-                    sale_item = form.save(commit=False)
-                    sale_item.sales = sale  # Ensure correct relationship
-                    sale_item.save()
+            # Save the formset items
+            for form in formset:
+                if form.cleaned_data:
+                    if form.cleaned_data.get('DELETE'):
+                        # If marked for deletion
+                        form.instance.delete()
+                    else:
+                        sale_item = form.save(commit=False)
+                        sale_item.sales = sale
+                        sale_item.save()
 
-                # Calculate new total cost
-                sale.total_cost = sum(item.price_per_unit * item.quantity for item in sale.salesitem_set.all())
-                sale.save()
+            # Update the total cost
+            sale.total_cost = sum(item.price_per_unit * item.quantity for item in sale.salesitem_set.all())
+            sale.save()
 
-                messages.success(request, 'Sale has been updated successfully!')
-                return redirect('sales_list')  # Redirect to the sales list view
-            else:
-                messages.error(request, 'There was an error with the product details.')
+            messages.success(request, 'Sale has been updated successfully!')
+            return redirect('sales_list')
+
         else:
-            messages.error(request, 'There was an error with the sale details.')
-
-    else:
-        formset = SaleItemFormSet(queryset=SalesItem.objects.filter(sales=sale))
+            messages.error(request, 'There was an error updating the sale. Please check the details.')
 
     return render(request, 'sales/add.html', {
         'sale_form': sale_form,
         'formset': formset,
         'products': Product.objects.all(),
-        'sale': sale
+        'sale': sale,
     })
+
+# Delete Sale
+def delete_sale(request, pk):
+    sale = get_object_or_404(Sales, pk=pk)
+    sale.delete()
+    messages.success(request, 'Sale has been successfully deleted!')
+    return redirect('sales_list')  # Redirect after successful deletion

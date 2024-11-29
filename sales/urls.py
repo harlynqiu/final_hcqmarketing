@@ -11,6 +11,8 @@ urlpatterns = [
     # URL for editing an existing sale
     path('sales/edit/<int:sale_id>/', views.edit_sale, name='edit_sale'),
     
+    path('<int:pk>/delete/', views.delete_sale, name='delete_sale'),
+    
     # Optional: URL for deleting a sale (if needed)
     # path('sales/delete/<int:sale_id>/', views.delete_sale, name='delete_sale'),
 ]
