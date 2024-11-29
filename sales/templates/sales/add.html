@@ -57,7 +57,6 @@
                             <label for="{{ sale_form.payment_stat.id_for_label }}" class="form-label">{{ sale_form.payment_stat.label }}</label>
                             {{ sale_form.payment_stat }}
                         </div>
-
                         
                         <!-- Sale Items Container -->
                         <div id="sale-items" class="mb-3">
@@ -113,61 +112,74 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let totalFormsInput = document.querySelector('#id_form-TOTAL_FORMS');
-
-    // Function to update form indices
-    function updateFormIndices() {
-        document.querySelectorAll('.sale-item').forEach((item, index) => {
-            item.id = `item-${index}`;
-            item.querySelectorAll('select, input').forEach(input => {
-                input.name = input.name.replace(/form-\d+-/, `form-${index}-`);
-                input.id = input.id.replace(/form-\d+-/, `form-${index}-`);
+    document.addEventListener('DOMContentLoaded', function () {
+        let totalFormsInput = document.querySelector('#id_form-TOTAL_FORMS');
+    
+        // Fetch product data as a JavaScript object
+        const products = [
+            {% for product in products %}
+                { id: {{ product.id }}, name: "{{ product.product_name }}" },
+            {% endfor %}
+        ];
+    
+        // Function to update form indices
+        function updateFormIndices() {
+            document.querySelectorAll('.sale-item').forEach((item, index) => {
+                item.id = `item-${index}`;
+                item.querySelectorAll('select, input').forEach(input => {
+                    input.name = input.name.replace(/form-\d+-/, `form-${index}-`);
+                    input.id = input.id.replace(/form-\d+-/, `form-${index}-`);
+                });
             });
-        });
-        totalFormsInput.value = document.querySelectorAll('.sale-item').length;
-    }
-
-    // Add new product row
-    document.querySelector('#add-more').addEventListener('click', function () {
-        let itemCount = document.querySelectorAll('.sale-item').length;
-        const newItem = document.createElement('div');
-        newItem.classList.add('sale-item', 'mb-3');
-        newItem.id = `item-${itemCount}`;
-        newItem.innerHTML = `
-            <div class="row">
-                <div class="col-md-4">
-                    <label class="form-label">Product</label>
-                    <select name="form-${itemCount}-product" id="id_form-${itemCount}-product" class="form-select">
-                        {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Quantity</label>
-                    <input type="number" name="form-${itemCount}-quantity" id="id_form-${itemCount}-quantity" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Price</label>
-                    <input type="number" name="form-${itemCount}-price_per_item" id="id_form-${itemCount}-price_per_item" class="form-control">
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="button" class="btn btn-danger btn-sm delete-row">X</button>
-                </div>
-            </div>`;
-        document.querySelector('#sale-items').appendChild(newItem);
-        updateFormIndices();
-    });
-
-    // Delete row
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('delete-row')) {
-            e.target.closest('.sale-item').remove();
-            updateFormIndices();
+            totalFormsInput.value = document.querySelectorAll('.sale-item').length;
         }
+    
+        // Add new product row
+        document.querySelector('#add-more').addEventListener('click', function () {
+            let itemCount = document.querySelectorAll('.sale-item').length;
+            const newItem = document.createElement('div');
+            newItem.classList.add('sale-item', 'mb-3');
+            newItem.id = `item-${itemCount}`;
+    
+            // Create product options dynamically
+            const productOptions = products.map(product => 
+                `<option value="${product.id}">${product.name}</option>`
+            ).join('');
+    
+            newItem.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Product</label>
+                        <select name="form-${itemCount}-product" id="id_form-${itemCount}-product" class="form-select">
+                            <option value="" disabled selected>Select Product</option>
+                            ${productOptions}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" name="form-${itemCount}-quantity" id="id_form-${itemCount}-quantity" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" name="form-${itemCount}-price_per_item" id="id_form-${itemCount}-price_per_item" class="form-control">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger btn-sm delete-row">X</button>
+                    </div>
+                </div>`;
+            
+            document.querySelector('#sale-items').appendChild(newItem);
+            updateFormIndices();
+        });
+    
+        // Delete row
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('delete-row')) {
+                e.target.closest('.sale-item').remove();
+                updateFormIndices();
+            }
+        });
     });
-});
 </script>
 
 {% endblock %}
