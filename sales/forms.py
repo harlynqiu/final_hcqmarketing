@@ -22,10 +22,8 @@ class SalesForm(forms.ModelForm):
         }
 
 
-
-
 class SalesItemForm(forms.ModelForm):
-    class Meta:
+    class Meta: 
         model = SalesItem
         fields = ['product', 'quantity', 'price_per_item']
         widgets = {

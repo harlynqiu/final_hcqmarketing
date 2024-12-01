@@ -16,18 +16,12 @@ class Sales(models.Model):
         ('Partial', 'Partial'),
     ]
 
-    customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name='sales'
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales')
     date = models.DateTimeField(default=timezone.now)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    sales_code = models.CharField(max_length=100, unique=True)
-    status = models.CharField(
-        max_length=50, choices=SALES_STATUS_CHOICES, default='Pending'
-    )
-    payment_stat = models.CharField(
-        max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Unpaid'
-    )
+    sales_code = models.CharField(max_length=100, null=True, blank = True)
+    status = models.CharField(max_length=50, choices=SALES_STATUS_CHOICES, default='Pending')
+    payment_stat = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Unpaid')
 
     def calculate_total_amount(self):
         """Calculate the total sale amount from the items."""

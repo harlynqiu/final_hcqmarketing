@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.forms import modelformset_factory
 from django.http import JsonResponse
 
+from inventory.models import Inventory
+
 from .models import Sales, SalesItem, Customer, Product
 from .forms import SalesForm, SalesItemForm
 
@@ -11,7 +13,7 @@ def create_sale(request):
     SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1, can_delete=True)
 
     sale_form = SalesForm(request.POST or None)
-    formset = SaleItemFormSet(request.POST or None, queryset=SalesItem.objects.none())
+    formset = SaleItemFormSet(request.POST or None, queryset=SalesItem.objects.none())  # Initialize formset with empty query
 
     if request.method == 'POST':
         if sale_form.is_valid() and formset.is_valid():
@@ -39,12 +41,13 @@ def create_sale(request):
         'sale_form': sale_form,
         'formset': formset,
         'customers': Customer.objects.all(),
-        'products': Product.objects.all(),  # Fix: Pass all products here
+        'products': Product.objects.all(),
+        'inventories': Inventory.objects.all(),
     })
 
 def get_products(request):
     products = Product.objects.all()
-    product_data = [{"id": product.id, "name": product.name} for product in products]
+    product_data = [{"id": product.id, "name": product.product_name} for product in products]
     return JsonResponse({"products": product_data})
 
 # List of all Sales
