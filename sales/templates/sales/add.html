@@ -51,9 +51,9 @@
                         {{ sale_form.status }}
                     </div>
 
-                    <!-- Payment Status Dropdown -->
+                    <!--Payment Status Dropdown -->
                     <div class="mb-3">
-                        <label for="{{ sale_form.payment_stat.id_for_label }}" class="form-label">{{ sale_form.payment_stat.label }}</label>
+                        <label for="{{ sale_form.payment_stat.id_for_label }}" class="form-label">Payment Status</label>
                         {{ sale_form.payment_stat }}
                     </div>
 
@@ -72,11 +72,11 @@
                                 <!-- Inventory Item Dropdown -->
                                 <div class="col-md-4">
                                     <label for="id_form-0-inventory" class="form-label">Product</label>
-                                    <select name="form-0-inventory" id="id_form-0-inventory" class="form-select" required>
+                                    <select name="form-0-product" id="id_form-0-product" class="form-select" required>
                                         <option value="" selected disabled>Select Product</option>
                                         {% for product in products %}
                                             <option value="{{ product.id }}" data-price="{{ product.product_price }}">
-                                                {{ product.product_name }} 
+                                                {{ product.product_name }}
                                             </option>
                                         {% endfor %}
                                     </select>
@@ -91,7 +91,7 @@
                                 <!-- Price Input (Auto-filled with purchase price from product) -->
                                 <div class="col-md-3">
                                     <label for="id_form-0-price" class="form-label">Price</label>
-                                    <input type="number" name="form-0-price" id="id_form-0-price" class="form-control" readonly>
+                                    <input type="number" name="form-0-price_per_item" id="id_form-0-price_per_item" class="form-control" readonly>
                                 </div>
 
                                 <!-- Delete Button -->
@@ -139,11 +139,11 @@
     }
 
     // Event listener for inventory selection to update price
-    document.addEventListener('change', function(event) {
-        if (event.target.matches('[id^="id_form-"][id$="-inventory"]')) {
+    document.addEventListener('change', function (event) {
+        if (event.target.matches('[id^="id_form-"][id$="-product"]')) {
             const itemIndex = event.target.id.match(/\d+/)[0];
             const price = event.target.options[event.target.selectedIndex].getAttribute('data-price');
-            document.getElementById(`id_form-${itemIndex}-price`).value = price;
+            document.getElementById(`id_form-${itemIndex}-price_per_item`).value = price;
             updateTotalPrice();
         }
     });
