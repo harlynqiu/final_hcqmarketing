@@ -91,7 +91,7 @@
                                 <!-- Price Input (Auto-filled with purchase price from product) -->
                                 <div class="col-md-3">
                                     <label for="id_form-0-price" class="form-label">Price</label>
-                                    <input type="number" name="form-0-price_per_item" id="id_form-0-price_per_item" class="form-control" readonly>
+                                    <input type="number" name="form-0-price" id="id_form-0-price" class="form-control" readonly>
                                 </div>
 
                                 <!-- Delete Button -->
@@ -132,18 +132,23 @@
             const quantity = document.getElementById(`id_form-${index}-quantity`).value;
             const price = document.getElementById(`id_form-${index}-price`).value;
             if (quantity && price) {
-                total += (quantity * price);
+                total += (quantity * price);  // Calculate total price for each item
             }
         });
-        document.getElementById('id_total_price').value = total;
+        document.getElementById('id_total_price').value = total;  // Update the total price field
     }
 
     // Event listener for inventory selection to update price
-    document.addEventListener('change', function (event) {
+    document.addEventListener('change', function(event) {
         if (event.target.matches('[id^="id_form-"][id$="-product"]')) {
-            const itemIndex = event.target.id.match(/\d+/)[0];
-            const price = event.target.options[event.target.selectedIndex].getAttribute('data-price');
-            document.getElementById(`id_form-${itemIndex}-price_per_item`).value = price;
+            const itemIndex = event.target.id.match(/\d+/)[0];  // Extract the item index
+            const selectedOption = event.target.options[event.target.selectedIndex]; // Get the selected option
+            const price = selectedOption.getAttribute('data-price'); // Get the price from data-price attribute
+    
+            // Set the price in the corresponding price input
+            document.getElementById(`id_form-${itemIndex}-price`).value = price;
+            
+            // Update total price after selecting the product
             updateTotalPrice();
         }
     });

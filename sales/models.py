@@ -13,7 +13,7 @@ class Sales(models.Model):
         ('Cancelled', 'Cancelled'),
     ]
 
-    PAYMENT_STATUS_CHOICES = [
+    PAYMENT_CHOICES = [
         ('Cash', 'Cash'),
         ('Online', 'Online'),
         ('Terms', 'Terms'),
@@ -25,7 +25,7 @@ class Sales(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     sales_code = models.CharField(max_length=100, null=True, blank = True)
     status = models.CharField(max_length=50, choices=SALES_STATUS_CHOICES, default='Pending')
-    payment_stat = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='Pending')
+    payment_stat = models.CharField(max_length=50, choices=PAYMENT_CHOICES, default='Cash')
 
     def calculate_total_amount(self):
         """Calculate the total sale amount from the items."""
@@ -44,9 +44,10 @@ class Sales(models.Model):
                         f"Not enough stock for product: {item.product.name}"
                     )
 
-def save(self, *args, **kwargs):
-    """Override save method to ensure total amount is calculated."""
-    super().save(*args, **kwargs)  # Save the Sales instance first
+    def save(self, *args, **kwargs):
+        """Override save method to ensure total amount is calculated."""
+        self.calculate_total_amount()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Sale {self.sales_code} - {self.customer.name}"
@@ -65,4 +66,3 @@ class SalesItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.quantity} @ {self.price_per_item}"
-
