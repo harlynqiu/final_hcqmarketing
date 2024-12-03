@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from inventory.models import Inventory
 
 from .models import Sales, SalesItem, Customer, Product
-from .forms import SalesForm, SalesItemForm
+from .forms import SalesForm, SalesItemForm, SalesItemFormSet
 
 # Create Sale
 def create_sale(request):
@@ -124,3 +124,56 @@ def delete_sale(request, pk):
     sale.delete()
     messages.success(request, 'Sale has been successfully deleted!')
     return redirect('sales_list')  # Redirect after successful deletion
+
+def sales_detail(request, sale_id):                                                                                    #recently added
+    sale = get_object_or_404(Sales, id=sale_id)
+    sales_form = SalesForm(request.POST or None, instance=sale)
+    sales_item_formset = SalesItemFormSet(request.POST or None, queryset=sale.items.all())
+
+    if request.method == "POST":
+        if sales_form.is_valid() and sales_item_formset.is_valid():
+            # Save sale instance
+            sales_form.save()
+            # Save sale items from the formset
+            sales_item_formset.save()
+
+            # Update total amount
+            sale.total_amount = sum(item.price_per_item * item.quantity for item in sale.items.all())
+            sale.save()
+
+            messages.success(request, "Sale updated successfully!")
+            return redirect('sales:sales_detail', sale_id=sale.id)
+
+    return render(request, "sales/sales_detail.html", {
+        "sale": sale,
+        "sales_form": sales_form,
+        "sales_item_formset": sales_item_formset,
+    })
+
+def update_sale_items(request, sale_id):                                                                    #recently added
+    sale = get_object_or_404(Sales, id=sale_id)
+    sales_item_formset = SalesItemFormSet(request.POST or None, queryset=sale.items.all())
+
+    if request.method == "POST":
+        if sales_item_formset.is_valid():
+            sales_item_formset.save()
+            # Optionally, update the total amount for the sale
+            sale.total_amount = sum(item.price_per_item * item.quantity for item in sale.items.all())
+            sale.save()
+            messages.success(request, "Sale items updated successfully!")
+            return redirect('sales:sales_detail', sale_id=sale.id)
+
+        else:
+            messages.error(request, "There was an error updating the sale items.")
+
+    return render(request, "sales/sales_detail.html", {
+        "sale": sale,
+        "sales_item_formset": sales_item_formset,
+    })
+
+def change_sale_status(request, sale_id):           #recenly added
+    sale = get_object_or_404(Sales, id=sale_id) 
+    # Update sale status logic
+    sale.status = 'new_status'  # Example update
+    sale.save()
+    return redirect('sales:sales_list')  # Redirect after the change
