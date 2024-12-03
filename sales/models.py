@@ -66,11 +66,8 @@ class Sales(models.Model):
         if not self.sales_code:
             self.sales_code = self.generate_sales_code()
         
-        # Save the instance to ensure it has a primary key
-        super().save(*args, **kwargs)
-        # Perform calculations after saving
+        # Calculate total amount before saving
         self.calculate_total_amount()
-        # Save again to persist the calculated total
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -95,6 +92,10 @@ class SalesItem(models.Model):
         if not self.price_per_item:
             self.price_per_item = self.product.product_price
         super().save(*args, **kwargs)
+
+        # Update the total amount in the related sale
+        self.sale.calculate_total_amount()
+        self.sale.save()
 
     def __str__(self):
         return f"{self.product.product_name} - {self.quantity} @ {self.price_per_item}"

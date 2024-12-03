@@ -1,46 +1,62 @@
 {% extends "base.html" %}
 
 {% block body %}
-<h3 class="m-4">Sales Detail</h3>
+<h3 class="m-4">Sale Information</h3>
 
 <div class="row">
     <div class="col-12">
         <div class="card bg-light ms-4 me-4 mb-4">
             <div class="card-header">
-                <h5 class="card-title">Employee Details</h5>
+                <h5 class="card-title">Sale Details</h5>
             </div>
             <div class="card-body">
-                <!-- Display employee details -->
-                <p><strong>Name:</strong> {{ sale.customer.customer_hardware }}</p>
-                <p><strong>Date::</strong> {{ sale.date|date:"Y-m-d H:i" }}</p>
-                <p><strong>Total Cost:</strong> {{ sale.total_amount }}</p>
+                <!-- Display Sale details -->
+                <p><strong>Sale Code:</strong> {{ sale.sales_code }}</p>
+                <p><strong>Customer:</strong> {{ sale.customer }}</p>
+                <p><strong>Sale Date:</strong> {{ sale.date }}</p>
                 <p><strong>Status:</strong> {{ sale.status }}</p>
-                
-                <h5>Sales Items</h5>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Product</th>
-                            <th scope="col">Quantity</th>
-                            <th scope="col">Delivered Quantity</th>
-                            <th scope="col">Price</th>
-                        </tr>
-                    </thead>
-                <tbody>
-                    {% for item in sale.items.all %}
-                    <tr>
-                        <td>{{ item.inventory.product.product_name }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.delivered_quantity }}</td>
-                        <td>{{ item.price }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-
-                </table>
-                
+                <p><strong>Payment Status:</strong> {{ sale.payment_stat }}</p>
+                <p><strong>Total Amount:</strong> {{ sale.total_amount }}</p>
             </div>
-            <div></div>
+
+            <div class="card-body">
+                    <h4>Sale Items:</h4>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {{ sales_item_formset.management_form }}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price per Item</th>
+                                    <th>Total Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in sale.items.all %}
+                                    <tr>
+                                        <td>{{ item.product.product_name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.price_per_item }}</td>
+                                        <td>{{ item.total_price }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </form>
+                    <div class="form-group">
+                        <strong>Overall Total Amount:</strong> {{ sale.total_amount }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer text-center">
+                <!-- Button to navigate back to the sales list -->
+                <a href="{% url 'sales:sales_list' %}" class="btn btn-secondary">Back to Sales List</a>
+            </div>
         </div>
     </div>
 </div>
