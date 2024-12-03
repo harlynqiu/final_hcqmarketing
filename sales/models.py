@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+import random
+import string
 from inventory.models import Product, Customer
 
 class Sales(models.Model):
@@ -21,7 +23,6 @@ class Sales(models.Model):
     sales_code = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=50, choices=SALES_STATUS_CHOICES, default='Pending')
     payment_stat = models.CharField(max_length=50, choices=PAYMENT_CHOICES, default='Cash')
-    
 
     def generate_sales_code(self):
         """Generate a unique sales code in the format SAL-YYYYMMDD-XXXX."""
@@ -65,18 +66,13 @@ class Sales(models.Model):
         if not self.sales_code:
             self.sales_code = self.generate_sales_code()
         
-        # Save the instance to ensure it has a primary key
-        if not self.pk:
-            super().save(*args, **kwargs)
-
-        # Now calculate the total amount
+        # Calculate total amount before saving
         self.calculate_total_amount()
-
-        # Save again to persist the total amount
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Sale {self.sales_code} - {self.customer.name}"
+
 
 class SalesItem(models.Model):
     sale = models.ForeignKey(Sales, related_name='items', on_delete=models.CASCADE)

@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block body %}
-<h3 class="m-4">New Sales</h3>
+<h3 class="m-4">Walk-In Customer Sales</h3>
 
 <div class="row">
     <div class="col-12">
@@ -14,9 +14,9 @@
                     {% csrf_token %}
 
                     <!-- Display form errors if any -->
-                    {% if sale_form.errors %}
+                    {% if form.errors %}
                         <ul>
-                            {% for field, errors in sale_form.errors.items %}
+                            {% for field, errors in form.errors.items %}
                                 <li><strong>{{ field }}:</strong>
                                     {% for error in errors %}
                                         <p>{{ error }}</p>
@@ -26,43 +26,21 @@
                         </ul>
                     {% endif %}
 
-                    <!-- Customer Dropdown -->
+                    <!-- Customer Information Section -->
                     <div class="mb-3">
-                        <label for="id_customer" class="form-label">Customer</label>
-                        <select name="customer" id="id_customer" class="form-select" required onchange="handleCustomerSelection()">
-                            <option value="" selected disabled>Select Customer</option>
-                            <option value="walk-in" id="walk-in-option">Walk-In Customer</option>
-                            {% for customer in customers %}
-                                <option value="{{ customer.id }}">
-                                    {{ customer.customer_hardware }} ({{ customer.first_name }} {{ customer.last_name }})
-                                </option>
-                            {% endfor %}
-                        </select>
+                        <label for="customer_name" class="form-label">Customer Name</label>
+                        <input type="text" name="customer_name" id="customer_name" class="form-control" required>
                     </div>
 
-                    <!-- Date Input -->
                     <div class="mb-3">
-                        <label for="id_date" class="form-label">Date</label>
-                        <input type="datetime-local" name="date" id="id_date" class="form-control" required>
+                        <label for="customer_email" class="form-label">Customer Email</label>
+                        <input type="email" name="customer_email" id="customer_email" class="form-control">
                     </div>
 
-                    <!-- Status Dropdown -->
-                    <div class="mb-3">
-                        <label for="{{ sale_form.status.id_for_label }}" class="form-label">{{ sale_form.status.label }}</label>
-                        {{ sale_form.status }}
-                    </div>
-
-                    <!-- Payment Status Dropdown -->
-                    <div class="mb-3">
-                        <label for="{{ sale_form.payment_stat.id_for_label }}" class="form-label">Payment Status</label>
-                        {{ sale_form.payment_stat }}
-                    </div>
-
-                    <!-- Purchase Items Container -->
+                    <!-- Product Selection and Order Form -->
                     <div id="purchase-items" class="mb-3">
                         <h5 class="card-title">Products</h5>
 
-                        <!-- Hidden Input for Django Formset Management -->
                         <input type="hidden" name="form-TOTAL_FORMS" id="id_form-TOTAL_FORMS" value="1">
                         <input type="hidden" name="form-INITIAL_FORMS" value="0">
                         <input type="hidden" name="form-MIN_NUM_FORMS" value="0">
@@ -70,9 +48,8 @@
 
                         <div class="purchase-item mb-3" id="item-0">
                             <div class="row">
-                                <!-- Inventory Item Dropdown -->
                                 <div class="col-md-4">
-                                    <label for="id_form-0-inventory" class="form-label">Product</label>
+                                    <label for="id_form-0-product" class="form-label">Product</label>
                                     <select name="form-0-product" id="id_form-0-product" class="form-select" required>
                                         <option value="" selected disabled>Select Product</option>
                                         {% for product in products %}
@@ -83,19 +60,16 @@
                                     </select>
                                 </div>
 
-                                <!-- Quantity Input -->
                                 <div class="col-md-4">
                                     <label for="id_form-0-quantity" class="form-label">Quantity</label>
                                     <input type="number" name="form-0-quantity" id="id_form-0-quantity" class="form-control" required>
                                 </div>
 
-                                <!-- Price Input (Auto-filled with purchase price from product) -->
                                 <div class="col-md-3">
                                     <label for="id_form-0-price" class="form-label">Price</label>
                                     <input type="number" name="form-0-price" id="id_form-0-price" class="form-control" readonly>
                                 </div>
 
-                                <!-- Delete Button -->
                                 <div class="col-md-1 d-flex align-items-end">
                                     <button type="button" class="btn btn-danger btn-sm delete-row">X</button>
                                 </div>
@@ -114,7 +88,7 @@
 
                     <!-- Submit Button -->
                     <div class="mb-3 text-center">
-                        <button type="submit" class="btn btn-primary">Save Sales</button>
+                        <button type="submit" class="btn btn-primary">Save Walk-In Sales</button>
                         <a href="{% url 'sales:sales_list' %}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
@@ -124,54 +98,6 @@
 </div>
 
 <script>
-    // Function to handle the customer selection
-    function handleCustomerSelection() {
-        const customerSelect = document.getElementById('id_customer');
-        const selectedCustomer = customerSelect.value;
-
-        if (selectedCustomer === 'walk-in') {
-            // Redirect to the walk-in sale page if 'Walk-In Customer' is selected
-            window.location.href = "{% url 'sales:walk_in_sale' %}";
-        }
-    }
-
-    // Attach the event listener for the customer selection change
-    document.addEventListener('DOMContentLoaded', function () {
-        const customerSelect = document.getElementById('id_customer');
-        if (customerSelect) {
-            customerSelect.addEventListener('change', handleCustomerSelection);
-        }
-    });
-
-    // Fetch product data from the server
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch("{% url 'sales:get_products' %}")
-            .then(response => response.json())
-            .then(data => {
-                const productPrices = {};
-                data.products.forEach(product => {
-                    productPrices[product.id] = product.price;
-                });
-
-                // Reference to the product dropdown and price input
-                const productSelects = document.querySelectorAll('[id^="id_form-"][id$="-product"]');
-                productSelects.forEach(productSelect => {
-                    productSelect.addEventListener('change', function () {
-                        const formIndex = this.id.split('-')[1]; // Extract form index
-                        const priceInput = document.getElementById(`id_form-${formIndex}-price`);
-
-                        const selectedProductId = this.value;
-                        if (selectedProductId && productPrices[selectedProductId]) {
-                            priceInput.value = productPrices[selectedProductId];
-                        } else {
-                            priceInput.value = ''; // Clear price field if no product selected
-                        }
-                    });
-                });
-            })
-            .catch(error => console.error('Error fetching products:', error));
-    });
-
     // Function to update the total price
     function updateTotalPrice() {
         let total = 0; // Initialize total amount to 0
@@ -200,18 +126,6 @@
 
     // Event listener for quantity input to recalculate total price
     document.addEventListener('input', function (event) {
-        if (event.target.matches('[id^="id_form-"][id$="-quantity"]')) {
-            updateTotalPrice();
-        }
-    });
-
-    // Initialize total price calculation when the page loads
-    document.addEventListener('DOMContentLoaded', function () {
-        updateTotalPrice();
-    });
-
-    // Event listener for quantity input to update the total price
-    document.addEventListener('input', function(event) {
         if (event.target.matches('[id^="id_form-"][id$="-quantity"]')) {
             updateTotalPrice();
         }

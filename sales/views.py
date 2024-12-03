@@ -55,6 +55,55 @@ def create_sale(request):
         'inventories': Inventory.objects.all(),
     })
 
+# Walk-in Sale (for walk-in customers)
+def walk_in_sale(request):
+    # Assuming walk-in customer has a Customer instance with id=1 (you can adjust this if needed)
+    walk_in_customer = Customer.objects.get(id=1)  # You can adjust this logic based on your requirements
+    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1, can_delete=True)
+
+    sale_form = SalesForm(request.POST or None)
+    formset = SaleItemFormSet(request.POST or None, queryset=SalesItem.objects.none())  # Initialize formset with empty query
+
+    if request.method == 'POST':
+        if sale_form.is_valid() and formset.is_valid():
+            # Save sale instance for walk-in customer
+            sale = sale_form.save(commit=False)
+            sale.customer = walk_in_customer  # Assign the walk-in customer
+            sale.payment_stat = 'Pending'  # Default payment status
+            sale.save()  # Save the sale first to get a primary key for the sale instance
+
+            # Process each form in the formset
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):  # Check if not marked for deletion
+                    sale_item = form.save(commit=False)
+                    sale_item.sale = sale  # Assign the sale instance to the SalesItem
+                    if sale_item.price_per_item is not None and sale_item.quantity is not None:
+                        sale_item.save()  # Save the SalesItem
+                    else:
+                        print("Invalid data for sale item, not saving.")  # Optional: for debugging invalid data
+
+            # Update the total amount for the sale using related_name 'items'
+            total_amount = 0
+            for item in sale.items.all():
+                if item.price_per_item is not None and item.quantity is not None:
+                    total_amount += item.price_per_item * item.quantity
+
+            sale.total_amount = total_amount
+            sale.save()  # Save the updated total amount
+
+            messages.success(request, 'Walk-in sale has been successfully created!')
+            return redirect('sales:sales_list')  # Redirect to sales list after successful creation
+        else:
+            print("Sale Form Errors:", sale_form.errors)
+            print("Formset Errors:", formset.errors)
+            messages.error(request, 'There was an error creating the walk-in sale. Please check the details.')
+
+    return render(request, 'sales/walk_in.html', {
+        'sale_form': sale_form,
+        'formset': formset,
+        'products': Product.objects.all(),
+    })
+
 # Get products for the sale
 def get_products(request):
     products = Product.objects.all()
