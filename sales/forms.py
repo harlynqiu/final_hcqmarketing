@@ -22,7 +22,6 @@ class SalesForm(forms.ModelForm):
             
         }
 
-
 class SalesItemForm(forms.ModelForm):
     class Meta:
         model = SalesItem
@@ -36,9 +35,18 @@ class SalesItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SalesItemForm, self).__init__(*args, **kwargs)
         self.fields['product'].queryset = Product.objects.all()
-
         # Disable price_per_item validation since it is dynamically set
         self.fields['price_per_item'].required = False
+
+    def clean_price_per_item(self):
+        price = self.cleaned_data.get('price_per_item')
+        product = self.cleaned_data.get('product')
+
+        # Validate that the price matches the product price
+        if price and product and price != product.product_price:
+            raise forms.ValidationError(f"Price must be {product.product_price} for this product.")
+        
+        return price
 
 
 # Formset for managing multiple SalesItems dynamically

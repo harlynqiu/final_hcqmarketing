@@ -22,12 +22,20 @@ def create_sale(request):
             sale.payment_stat = 'Pending'  # Default payment status
             sale.save()  # Save the sale first to get a primary key for the sale instance
 
- # Process each form in the formset
+            # Process each form in the formset
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):  # Check if not marked for deletion
                     sale_item = form.save(commit=False)
                     sale_item.sale = sale  # Assign the sale instance to the SalesItem
-                    sale_item.save()  # Save the SalesItem
+                    
+                    # Debugging check to print price and quantity before saving
+                    print(f"Price per item: {sale_item.price_per_item}, Quantity: {sale_item.quantity}")
+                    
+                    # Modify validation to allow saving if price_per_item and quantity are zero
+                    if sale_item.price_per_item is not None and sale_item.quantity is not None:
+                        sale_item.save()  # Save the SalesItem
+                    else:
+                        print("Invalid data for sale item, not saving.")  # Optional: for debugging invalid data
 
             # Update the total amount for the sale using related_name 'items'
             total_amount = 0

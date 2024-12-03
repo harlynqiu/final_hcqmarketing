@@ -31,6 +31,7 @@ class Sales(models.Model):
         """Calculate the total sale amount from the items."""
         total = sum(item.total_price for item in self.items.all())
         self.total_amount = total
+        print(f"Calculated total_amount: {self.total_amount}")  # Debugging line (optional)
 
     def update_stock(self):
         """Update product stock when sale is completed."""
@@ -70,5 +71,11 @@ class SalesItem(models.Model):
             return self.quantity * self.price_per_item
         return 0  # Return 0 if either value is None
 
+    def save(self, *args, **kwargs):
+        # Automatically set price_per_item from related product's price if it's not set
+        if not self.price_per_item:
+            self.price_per_item = self.product.product_price  # Assuming 'product_price' is the price field in the Product model
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.product.name} - {self.quantity} @ {self.price_per_item}"
+        return f"{self.product.product_name} - {self.quantity} @ {self.price_per_item}"
