@@ -24,7 +24,8 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th scope="col">Sales Code</th> <!-- Added Sales Code column -->
+                                <th scope="col">ID</th>
+                                <th scope="col">Sales Code</th>
                                 <th scope="col">Customer</th>
                                 <th scope="col">Date</th>
                                 <th scope="col">Total Cost</th>
@@ -35,7 +36,8 @@
                         <tbody>
                             {% for sale in sales %}
                             <tr>
-                                <td><a href="{% url 'sales:sales_detail' sale.id %}">{{ sale.sales_code }}</a></td> <!-- Link Sales Code -->
+                                <td>{{ sale.id }}</td>
+                                <td>{{ sale.sales_code }}</td>
                                 <td>{{ sale.customer.customer_hardware }}</td>
                                 <td>{{ sale.date }}</td>
                                 <td>{{ sale.total_amount }}</td>  <!-- Ensure this matches the field in your model -->
@@ -45,7 +47,7 @@
                                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#editStatusModal{{ sale.id }}">
                                         Edit Status
                                     </button>
-                                   
+                                    
                                     <form action="{% url 'sales:delete_sale' sale.id %}" method="POST" style="display:inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this sale?');">Delete</button>
@@ -62,35 +64,6 @@
         <h5 class="alert alert-primary ms-4 me-4">No Sales Records Found</h5>
         {% endif %}
     </div>
-</div>
-
-<!-- Modals for editing sale status -->
-{% for sale in sales %}
-<div class="modal fade" id="editStatusModal{{ sale.id }}" tabindex="-1" aria-labelledby="editStatusModalLabel{{ sale.id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editStatusModalLabel{{ sale.id }}">Edit Status for {{ sale.sales_code }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="{% url 'sales:change_sale_status' sale.id %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Select New Status</label>
-                        <select name="status" id="status-{{ sale.id }}" class="form-select">
-                            <option value="Pending" {% if sale.status == "Pending" %}selected{% endif %}>Pending</option>
-                            <option value="Completed" {% if sale.status == "Completed" %}selected{% endif %}>Completed</option>
-                            <option value="Cancelled" {% if sale.status == "Cancelled" %}selected{% endif %}>Cancelled</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary mt-3">Update Status</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
+</div> 
 
 {% endblock %}

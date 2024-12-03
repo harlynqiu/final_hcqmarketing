@@ -48,7 +48,7 @@ def create_sale(request):
             sale.save()  # Save the updated total amount
 
             messages.success(request, 'Sale has been successfully created!')
-            return redirect('sales_list')  # Redirect to sales list after successful creation
+            return redirect('sales:sales_list')  # Redirect to sales list after successful creation
         else:
             print("Sale Form Errors:", sale_form.errors)
             print("Formset Errors:", formset.errors)
@@ -103,7 +103,7 @@ def edit_sale(request, sale_id):
             sale.save()
 
             messages.success(request, 'Sale has been updated successfully!')
-            return redirect('sales_list')
+            return redirect('sales:sales_list')
 
         else:
             print("Sale Form Errors:", sale_form.errors)
@@ -123,7 +123,7 @@ def delete_sale(request, pk):
     sale = get_object_or_404(Sales, pk=pk)
     sale.delete()
     messages.success(request, 'Sale has been successfully deleted!')
-    return redirect('sales_list')  # Redirect after successful deletion
+    return redirect('sales:sales_list')  # Redirect after successful deletion
 
 def sales_detail(request, sale_id):                                                                                    #recently added
     sale = get_object_or_404(Sales, id=sale_id)
@@ -171,9 +171,3 @@ def update_sale_items(request, sale_id):                                        
         "sales_item_formset": sales_item_formset,
     })
 
-def change_sale_status(request, sale_id):           #recenly added
-    sale = get_object_or_404(Sales, id=sale_id) 
-    # Update sale status logic
-    sale.status = 'new_status'  # Example update
-    sale.save()
-    return redirect('sales:sales_list')  # Redirect after the change

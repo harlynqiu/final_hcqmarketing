@@ -12,7 +12,7 @@ urlpatterns = [
     path('get-products/', views.get_products, name='get_products'),
     path('<int:sale_id>/', views.sales_detail, name='sales_detail'),
     path('sales/<int:sale_id>/update_items/', views.update_sale_items, name='update_sale_items'),
-    path('sales/change_status/<int:sale_id>/', views.change_sale_status, name='change_sale_status'),
+    #path('sales/change_status/<int:sale_id>/', views.change_sale_status, name='change_sale_status'),
     # Optional: URL for deleting a sale (if needed)
     # path('sales/delete/<int:sale_id>/', views.delete_sale, name='delete_sale'),
 ]
