@@ -22,20 +22,28 @@ def create_sale(request):
             sale.payment_stat = 'Pending'  # Default payment status
             sale.save()  # Save the sale first to get a primary key for the sale instance
 
-            # Process each form in the formset
+ # Process each form in the formset
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):  # Check if not marked for deletion
                     sale_item = form.save(commit=False)
-                    sale_item.sales = sale  # Assign the sale instance to the SalesItem
+                    sale_item.sale = sale  # Assign the sale instance to the SalesItem
                     sale_item.save()  # Save the SalesItem
 
-            # Update the total amount for the sale
-            sale.total_amount = sum(item.price_per_item * item.quantity for item in sale.salesitem_set.all())
+            # Update the total amount for the sale using related_name 'items'
+            total_amount = 0
+            for item in sale.items.all():
+                # Ensure both price_per_item and quantity are valid
+                if item.price_per_item is not None and item.quantity is not None:
+                    total_amount += item.price_per_item * item.quantity
+
+            sale.total_amount = total_amount
             sale.save()  # Save the updated total amount
 
             messages.success(request, 'Sale has been successfully created!')
             return redirect('sales_list')  # Redirect to sales list after successful creation
         else:
+            print("Sale Form Errors:", sale_form.errors)
+            print("Formset Errors:", formset.errors)
             messages.error(request, 'There was an error creating the sale. Please check the details.')
 
     return render(request, 'sales/add.html', {
@@ -48,7 +56,7 @@ def create_sale(request):
 
 def get_products(request):
     products = Product.objects.all()
-    product_data = [{"id": product.id, "name": product.product_name} for product in products]
+    product_data = [{"id": product.id, "name": product.product_name, "price": float(product.product_price)} for product in products]
     return JsonResponse({"products": product_data})
 
 # List of all Sales

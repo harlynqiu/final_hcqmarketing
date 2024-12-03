@@ -24,17 +24,21 @@ class SalesForm(forms.ModelForm):
 
 
 class SalesItemForm(forms.ModelForm):
-    class Meta: 
+    class Meta:
         model = SalesItem
         fields = ['product', 'quantity', 'price_per_item']
         widgets = {
             'product': forms.Select(attrs={'class': 'form-control'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'price_per_item': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price_per_item': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
         }
+
     def __init__(self, *args, **kwargs):
         super(SalesItemForm, self).__init__(*args, **kwargs)
         self.fields['product'].queryset = Product.objects.all()
+
+        # Disable price_per_item validation since it is dynamically set
+        self.fields['price_per_item'].required = False
 
 
 # Formset for managing multiple SalesItems dynamically

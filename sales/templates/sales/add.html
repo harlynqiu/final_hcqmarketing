@@ -123,34 +123,73 @@
         </div>
     </div>
 </div>
-
 <script>
-    // Function to update the total price
-    function updateTotalPrice() {
-        let total = 0;
-        document.querySelectorAll('.purchase-item').forEach((item, index) => {
-            const quantity = document.getElementById(`id_form-${index}-quantity`).value;
-            const price = document.getElementById(`id_form-${index}-price`).value;
-            if (quantity && price) {
-                total += (quantity * price);  // Calculate total price for each item
-            }
-        });
-        document.getElementById('id_total_price').value = total;  // Update the total price field
-    }
+    // Fetch product data from the server
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch("{% url 'get_products' %}")
+            .then(response => response.json())
+            .then(data => {
+                const productPrices = {};
+                data.products.forEach(product => {
+                    productPrices[product.id] = product.price;
+                });
 
-    // Event listener for inventory selection to update price
-    document.addEventListener('change', function(event) {
+                // Reference to the product dropdown and price input
+                const productSelects = document.querySelectorAll('[id^="id_form-"][id$="-product"]');
+                productSelects.forEach(productSelect => {
+                    productSelect.addEventListener('change', function () {
+                        const formIndex = this.id.split('-')[1]; // Extract form index
+                        const priceInput = document.getElementById(`id_form-${formIndex}-price`);
+
+                        const selectedProductId = this.value;
+                        if (selectedProductId && productPrices[selectedProductId]) {
+                            priceInput.value = productPrices[selectedProductId];
+                        } else {
+                            priceInput.value = ''; // Clear price field if no product selected
+                        }
+                    });
+                });
+            })
+            .catch(error => console.error('Error fetching products:', error));
+    });
+</script>
+<script>
+// Function to update the total price
+function updateTotalPrice() {
+    let total = 0; // Initialize total amount to 0
+    document.querySelectorAll('.purchase-item').forEach((item, index) => {
+        const quantity = parseFloat(document.getElementById(`id_form-${index}-quantity`).value) || 0;
+        const price = parseFloat(document.getElementById(`id_form-${index}-price`).value) || 0;
+        total += quantity * price; // Add (quantity × price) for each product
+    });
+
+    // Update the total price field
+    document.getElementById('id_total_price').value = total.toFixed(2);
+}
+
+// Event listener for product selection to update price and recalculate total
+    document.addEventListener('change', function (event) {
         if (event.target.matches('[id^="id_form-"][id$="-product"]')) {
-            const itemIndex = event.target.id.match(/\d+/)[0];  // Extract the item index
-            const selectedOption = event.target.options[event.target.selectedIndex]; // Get the selected option
-            const price = selectedOption.getAttribute('data-price'); // Get the price from data-price attribute
-    
-            // Set the price in the corresponding price input
-            document.getElementById(`id_form-${itemIndex}-price`).value = price;
+            const formIndex = event.target.id.match(/\d+/)[0]; // Extract index from field ID
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
             
-            // Update total price after selecting the product
+            // Update price for the selected product
+            document.getElementById(`id_form-${formIndex}-price`).value = price || '';
             updateTotalPrice();
         }
+    });
+
+    // Event listener for quantity input to recalculate total price
+    document.addEventListener('input', function (event) {
+        if (event.target.matches('[id^="id_form-"][id$="-quantity"]')) {
+            updateTotalPrice();
+        }
+    });
+
+    // Initialize total price calculation when the page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        updateTotalPrice();
     });
 
     // Event listener for quantity input to update the total price

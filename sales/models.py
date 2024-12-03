@@ -45,8 +45,11 @@ class Sales(models.Model):
                     )
 
     def save(self, *args, **kwargs):
-        """Override save method to ensure total amount is calculated."""
+        # Save the instance to ensure it has a primary key
+        super().save(*args, **kwargs)
+        # Perform calculations after saving
         self.calculate_total_amount()
+        # Save again to persist the calculated total
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -57,12 +60,15 @@ class SalesItem(models.Model):
     sale = models.ForeignKey(Sales, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price_per_item = models.DecimalField(max_digits=10, decimal_places=2)
+    price_per_item = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     @property
     def total_price(self):
         """Calculate the total price for this sale item."""
-        return self.quantity * self.price_per_item
+        # Ensure that both quantity and price_per_item are valid
+        if self.quantity is not None and self.price_per_item is not None:
+            return self.quantity * self.price_per_item
+        return 0  # Return 0 if either value is None
 
     def __str__(self):
         return f"{self.product.name} - {self.quantity} @ {self.price_per_item}"
