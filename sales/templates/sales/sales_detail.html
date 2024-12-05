@@ -81,6 +81,33 @@
             </div>
             {% endif %}
 
+            <!-- Sales Return Details -->
+            {% if sale.sales_returns.all %}
+            <div class="card-body">
+                <h4>Sales Return Details:</h4>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Return Code</th>
+                            <th>Quantity Returned</th>
+                            <th>Return Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for return in sale.sales_returns.all %}
+                        <tr>
+                            <td>{{ return.return_code }}</td>
+                            <td>{{ return.quantity }}</td>
+                            <td>{{ return.date|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="alert alert-info">No returns for this sale.</p>
+            {% endif %}
+            
             <div class="card-footer text-center">
                 <!-- Button to navigate back to the sales list -->
                 <a href="{% url 'sales:sales_list' %}" class="btn btn-secondary">Back to Sales List</a>

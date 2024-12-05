@@ -25,7 +25,11 @@
                             {% for return_item in returns %}
                             <tr>
                                 <td>{{ return_item.return_code }}</td>
-                                <td>{{ return_item.sales.sales_code }}</td>
+                                <td>
+                                    <a href="{% url 'sales:sales_detail' return_item.sales.id %}">
+                                        {{ return_item.sales.sales_code }}
+                                    </a>
+                                </td>
                                 <td>{{ return_item.quantity }}</td>
                                 <td>{{ return_item.date|date:"Y-m-d" }}</td>
                             </tr>
