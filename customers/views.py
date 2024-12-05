@@ -2,6 +2,7 @@
 from django.shortcuts import render, redirect, HttpResponseRedirect, get_object_or_404
 from django.urls import reverse
 from .models import Customer
+from sales.models import Sales
 from .forms import CustomerForm
 from django.contrib import messages
 
@@ -57,3 +58,13 @@ def edit(request, id):
     else:
         form = CustomerForm(instance=customer)
     return render(request, 'customers/edit.html', {'form': form, 'customer': customer})
+
+def customer_sales_history(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id)
+    sales = Sales.objects.filter(customer=customer).order_by('-date')  # Fetch sales for this customer
+
+    context = {
+        'customer': customer,
+        'sales': sales,
+    }
+    return render(request, 'sales/customer_sales_history.html', context)

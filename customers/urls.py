@@ -7,4 +7,5 @@ urlpatterns = [
     path('customers/add/', views.add, name='add_customer'),  # Route to add customers
     path('customers/delete/<int:id>', views.delete, name = 'delete_customer'), #delete customer
     path('customers/<int:id>/edit/', views.edit, name='customer_edit'),
+    path('customer/<int:customer_id>/sales-history/', views.customer_sales_history, name='customer_sales_history'),
 ]

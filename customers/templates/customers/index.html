@@ -10,60 +10,63 @@
 </div>
 {% endif %}
 
-<h3 class = "m-4">Customers</h3>
-<div class = "row">
-    <div class = "col-12">
+<h3 class="m-4">Customers</h3>
+<div class="row">
+    <div class="col-12">
         {% if customers %}
         <div class="card bg-light ms-4 me-4 mb-4">
-            <div class="card-header"></div>
+            <div class="card-header">
+                <h5 class="card-title">Customer List</h5>
+            </div>
             <div class="card-body">
                 <p class="card-text">
-                    <div class ="table-responsive">
+                    <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
-                            <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">First Name</th>
-                                <th scope="col">Last Name</th>
-                                <th scope="col">Customer Hardware</th>
-                                <th scope="col">Email</th>
-                                <th scope="col">Address</th>
-                                <th scope="col">Contact</th>
-                                <th scope="col">Date Started</th>
-                                <th scope="col">Start By</th>
-                                <th scope="col">Date Edited</th>
-                            </tr>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">First Name</th>
+                                    <th scope="col">Last Name</th>
+                                    <th scope="col">Customer Hardware</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Address</th>
+                                    <th scope="col">Contact</th>
+                                    <th scope="col">Date Started</th>
+                                    <th scope="col">Start By</th>
+                                    <th scope="col">Date Edited</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for customer in customers %}
-                                    <tr>
-                                        <td>{{ customer.id}}</td>
-                                        <td>{{ customer.first_name}}</td>
-                                        <td>{{ customer.last_name}}</td>
-                                        <td>{{ customer.customer_hardware}}</td>
-                                        <td>{{ customer.email}}</td>
-                                        <td>{{ customer.address}}</td>
-                                        <td>{{ customer.contact_num}}</td>
-                                        <td>{{ customer.dateStart}}</td>
-                                        <td>{{ customer.startBy}}</td>
-                                        <td>{{ customer.dateEdit}}</td>
-                                        <td> 
-                                            <form action="{% url 'customer_edit' customer.id %}" method="post" style="display:inline;"> 
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger btn-sm">Edit</button>
-                                            </form>
-                                            
-                                        </td>
-                                        <td>
-                                                
-                                            <form action="{% url 'delete_customer' customer.id %}" method="post" style="display:inline;">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                            </form>
-
-                                        </td>
-
-                                    
+                                <tr>
+                                    <td>{{ customer.id }}</td>
+                                    <td>
+                                        <!-- Link to the customer's sales history -->
+                                        <a href="{% url 'customer_sales_history' customer.id %}">
+                                            {{ customer.first_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ customer.last_name }}</td>
+                                    <td>{{ customer.customer_hardware }}</td>
+                                    <td>{{ customer.email }}</td>
+                                    <td>{{ customer.address }}</td>
+                                    <td>{{ customer.contact_num }}</td>
+                                    <td>{{ customer.dateStart }}</td>
+                                    <td>{{ customer.startBy }}</td>
+                                    <td>{{ customer.dateEdit }}</td>
+                                    <td>
+                                        <!-- Edit Button -->
+                                        <form action="{% url 'customer_edit' customer.id %}" method="get" style="display:inline;">
+                                            <button type="submit" class="btn btn-warning btn-sm">Edit</button>
+                                        </form>
+                                        <!-- Delete Button -->
+                                        <form action="{% url 'delete_customer' customer.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -73,12 +76,9 @@
         </div>
 
         {% else %}
-            <h5 class = "alert alert-primary ms-4 me-4"> No Customer Records </h5>
+        <h5 class="alert alert-primary ms-4 me-4">No Customer Records</h5>
         {% endif %}
     </div>
-</div> 
 </div>
-
-
 
 {% endblock %}
