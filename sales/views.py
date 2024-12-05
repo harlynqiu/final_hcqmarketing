@@ -304,3 +304,7 @@ def edit_sale(request, sale_id):
         'products': Product.objects.all(),
         'inventories': Inventory.objects.all(),
     })
+
+def invoice_list(request):
+    invoices = Invoice.objects.all()  # Fetch all invoices
+    return render(request, 'sales/invoice_list.html', {'invoices': invoices})
