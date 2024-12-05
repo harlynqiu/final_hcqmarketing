@@ -4,40 +4,32 @@ from . import views
 app_name = 'sales'
 
 urlpatterns = [
-    # List of all sales
+    # Sales List and Detail Views
     path('sales/', views.sales_list, name='sales_list'),  # Access sales at root of the sales section
+    path('<int:sale_id>/details/', views.sales_detail, name='sales_detail'),  # Detailed info about a specific sale
 
-    # Create a new sale
-    path('create/', views.create_sale, name='create_sale'),
+    # Sales Creation and Editing
+    path('create/', views.create_sale, name='create_sale'),  # Create a new sale
+    path('<int:sale_id>/edit/', views.edit_sale, name='edit_sale'),  # Edit a sale
+    path('<int:sale_id>/delete/', views.delete_sale, name='delete_sale'),  # Delete a sale
 
-    # Walk-in customer sales page (for new walk-in customers)
+    # Walk-In Customer Sales
     path('walk-in/', views.walk_in_sale, name='walk_in_sale'),  # Handle walk-in customer sales
 
-    # Edit sale
-    path('edit/<int:sale_id>/', views.edit_sale, name='edit_sale'),
+    # Products for Sale
+    path('get-products/', views.get_products, name='get_products'),  # Fetch products for the sale
 
-    # Delete sale
-    path('<int:pk>/delete/', views.delete_sale, name='delete_sale'),
+    # Sales Invoice
+    path('<int:sale_id>/add-invoice/', views.add_invoice, name='add_invoice'),  # Add an invoice to a sale
 
-    # Fetch products for the sale
-    path('get-products/', views.get_products, name='get_products'),
+    # Sale Items Management
+    path('<int:sale_id>/update-items/', views.update_sale_items, name='update_sale_items'),  # Update sale items
+    path('<int:sale_id>/delete-item/<int:item_id>/', views.delete_sale_item, name='delete_sale_item'),  # Delete a sale item
 
-    # Sale detail view, which should display detailed info about a specific sale
-    path('details/<int:sale_id>/', views.sales_detail, name='sales_detail'),  # Ensure this is below other paths to avoid conflict
+    # Sales Status
+    path('<int:sale_id>/change-status/', views.change_sale_status, name='change_sale_status'),  # Change sales status
 
-    #invoice
-    path('sales/<int:sale_id>/add-invoice/', views.add_invoice, name='add_invoice'),
-
-    # Update sale items (e.g., edit products in a sale)
-    path('<int:sale_id>/update_items/', views.update_sale_items, name='update_sale_items'),
-
-    # Delete a sale item
-    path('sales/<int:sale_id>/delete_item/<int:item_id>/', views.delete_sale_item, name='delete_sale_item'),
-
-    #change sales status
-    path('<int:pk>/change-status/', views.change_sales_status, name='change_sales_status'),
-
+    # Sales Returns
     path('sales-return/create/<int:sale_id>/', views.create_sales_return, name='create_sales_return'),  # Create a sales return
-    path('sales-return/list/', views.sales_return_list, name='sales_return_list'),  # List of sales returns
+    path('sales-return/list/', views.sales_return_list, name='sales_return_list'),  # List of all sales returns
 ]
-
