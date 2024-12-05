@@ -10,7 +10,7 @@ urlpatterns = [
 
     # Sales Creation and Editing
     path('create/', views.create_sale, name='create_sale'),  # Create a new sale
-    path('<int:sale_id>/edit/', views.edit_sale, name='edit_sale'),  # Edit a sale
+    path('sale/edit/<int:sale_id>/', views.edit_sale, name='edit_sale'),  # Edit a sale
     path('<int:sale_id>/delete/', views.delete_sale, name='delete_sale'),  # Delete a sale
 
     # Walk-In Customer Sales

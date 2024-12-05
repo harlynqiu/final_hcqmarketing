@@ -1,6 +1,5 @@
 from django import forms
 from .models import Sales, SalesItem, SalesReturn
-
 from inventory.models import Product
 from django.forms import modelformset_factory
 
@@ -8,7 +7,7 @@ from django.forms import modelformset_factory
 class SalesForm(forms.ModelForm):
     class Meta:
         model = Sales
-        fields = ['customer', 'status','payment_stat']
+        fields = ['customer', 'status', 'payment_stat']
 
         labels = {
             'customer': 'Customer Name',
@@ -20,7 +19,6 @@ class SalesForm(forms.ModelForm):
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'payment_stat': forms.Select(attrs={'class': 'form-control'}),
-            
         }
 
 class SalesItemForm(forms.ModelForm):
@@ -36,14 +34,12 @@ class SalesItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SalesItemForm, self).__init__(*args, **kwargs)
         self.fields['product'].queryset = Product.objects.all()
-        # Disable price_per_item validation since it is dynamically set
         self.fields['price_per_item'].required = False
 
     def clean_price_per_item(self):
         price = self.cleaned_data.get('price_per_item')
         product = self.cleaned_data.get('product')
 
-        # Validate that the price matches the product price
         if price and product and price != product.product_price:
             raise forms.ValidationError(f"Price must be {product.product_price} for this product.")
         
@@ -58,6 +54,9 @@ class SalesReturnForm(forms.ModelForm):
 SalesItemFormSet = modelformset_factory(
     SalesItem,
     form=SalesItemForm,
-    extra=1,  # Number of extra empty forms to display by default
-    can_delete=True  # Allow deleting items from formset
+    extra=1,
+    can_delete=True
 )
+
+class WalkInCustomerForm(forms.Form):
+    customer_name = forms.CharField(max_length=100, required=True, label="Customer Name")
