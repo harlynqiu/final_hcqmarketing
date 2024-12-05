@@ -25,9 +25,15 @@ urlpatterns = [
     # Sale detail view, which should display detailed info about a specific sale
     path('details/<int:sale_id>/', views.sales_detail, name='sales_detail'),  # Ensure this is below other paths to avoid conflict
 
+    #invoice
+    path('sales/<int:sale_id>/add-invoice/', views.add_invoice, name='add_invoice'),
+
     # Update sale items (e.g., edit products in a sale)
     path('<int:sale_id>/update_items/', views.update_sale_items, name='update_sale_items'),
 
     # Delete a sale item
     path('sales/<int:sale_id>/delete_item/<int:item_id>/', views.delete_sale_item, name='delete_sale_item'),
+
+    path('<int:pk>/change-status/', views.change_sales_status, name='change_sales_status'),
 ]
+

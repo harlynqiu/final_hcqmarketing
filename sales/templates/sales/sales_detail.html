@@ -12,46 +12,74 @@
             <div class="card-body">
                 <!-- Display Sale details -->
                 <p><strong>Sale Code:</strong> {{ sale.sales_code }}</p>
-                <p><strong>Customer:</strong> {{ sale.customer }}</p>
-                <p><strong>Sale Date:</strong> {{ sale.date }}</p>
+                <p><strong>Customer:</strong> {{ sale.customer.customer_hardware }}</p>
+                <p><strong>Sale Date:</strong> {{ sale.date|date:"Y-m-d H:i" }}</p>
                 <p><strong>Status:</strong> {{ sale.status }}</p>
                 <p><strong>Payment Status:</strong> {{ sale.payment_stat }}</p>
                 <p><strong>Total Amount:</strong> {{ sale.total_amount }}</p>
             </div>
 
+            <!-- Sale Items -->
             <div class="card-body">
-                    <h4>Sale Items:</h4>
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {{ sales_item_formset.management_form }}
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price per Item</th>
-                                    <th>Total Price</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in sale.items.all %}
-                                    <tr>
-                                        <td>{{ item.product.product_name }}</td>
-                                        <td>{{ item.quantity }}</td>
-                                        <td>{{ item.price_per_item }}</td>
-                                        <td>{{ item.total_price }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </form>
-                    <div class="form-group">
-                        <strong>Overall Total Amount:</strong> {{ sale.total_amount }}
-                    </div>
-                </div>
+                <h4>Sale Items:</h4>
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price per Item</th>
+                            <th>Total Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sale.items.all %}
+                        <tr>
+                            <td>{{ item.product.product_name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.price_per_item }}</td>
+                            <td>{{ item.total_price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p class="text-end"><strong>Overall Total Amount:</strong> {{ sale.total_amount }}</p>
             </div>
+
+            <!-- Invoice Details -->
+            <div class="card-body">
+                <h4>Invoice Details:</h4>
+                {% if sale.invoice %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Invoice Date</th>
+                            <th>Shipment Date</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ sale.invoice.invoice_number }}</td>
+                            <td>{{ sale.invoice.invoice_date|date:"Y-m-d" }}</td>
+                            <td>{{ sale.invoice.shipment_date|date:"Y-m-d" }}</td>
+                            <td>{{ sale.invoice.remarks }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="alert alert-warning">No invoice available for this sale.</p>
+                {% endif %}
+            </div>
+
+            <!-- Add Invoice Button -->
+            {% if not sale.invoice and sale.status == 'Completed' %}
+            <div class="card-body">
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addInvoiceModal">
+                    Add Invoice Details
+                </button>
+            </div>
+            {% endif %}
 
             <div class="card-footer text-center">
                 <!-- Button to navigate back to the sales list -->
@@ -60,5 +88,41 @@
         </div>
     </div>
 </div>
+
+<!-- Add Invoice Modal -->
+{% if not sale.invoice and sale.status == 'Completed' %}
+<div class="modal fade" id="addInvoiceModal" tabindex="-1" aria-labelledby="addInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addInvoiceModalLabel">Add Invoice Details for {{ sale.sales_code }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'sales:add_invoice' sale.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="invoice_number" class="form-label">Invoice Number</label>
+                        <input type="text" name="invoice_number" class="form-control" placeholder="Enter Invoice Number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="invoice_date" class="form-label">Invoice Date</label>
+                        <input type="date" name="invoice_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shipment_date" class="form-label">Shipment Date</label>
+                        <input type="date" name="shipment_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="Enter any remarks"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Save Invoice</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}

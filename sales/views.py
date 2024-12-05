@@ -4,7 +4,7 @@ from django.forms import modelformset_factory
 from django.http import JsonResponse
 
 from inventory.models import Inventory
-from .models import Sales, SalesItem, Customer, Product
+from .models import Sales, SalesItem, Customer, Product, Invoice
 from .forms import SalesForm, SalesItemForm, SalesItemFormSet
 
 # Create Sale
@@ -21,6 +21,15 @@ def create_sale(request):
             sale.payment_stat = 'Pending'  # Default payment status
             sale.save()  # Save the sale first to get a primary key for the sale instance
 
+            # Now that the sale has a primary key, calculate the total amount for the sale
+            total_amount = 0
+            for item in sale.items.all():  # Access sale items after saving the sale
+                if item.price_per_item is not None and item.quantity is not None:
+                    total_amount += item.price_per_item * item.quantity
+
+            sale.total_amount = total_amount
+            sale.save()  # Save the updated total amount
+
             # Process each form in the formset
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):  # Check if not marked for deletion
@@ -30,15 +39,6 @@ def create_sale(request):
                         sale_item.save()  # Save the SalesItem
                     else:
                         print("Invalid data for sale item, not saving.")  # Optional: for debugging invalid data
-
-            # Update the total amount for the sale using related_name 'items'
-            total_amount = 0
-            for item in sale.items.all():
-                if item.price_per_item is not None and item.quantity is not None:
-                    total_amount += item.price_per_item * item.quantity
-
-            sale.total_amount = total_amount
-            sale.save()  # Save the updated total amount
 
             messages.success(request, 'Sale has been successfully created!')
             return redirect('sales:sales_list')  # Redirect to sales list after successful creation
@@ -130,6 +130,15 @@ def edit_sale(request, sale_id):
             sale = sale_form.save(commit=False)
             sale.save()
 
+            # Calculate the total amount for the sale now that the sale has a primary key
+            total_amount = 0
+            for item in sale.items.all():  # Access sale items after saving the sale
+                if item.price_per_item is not None and item.quantity is not None:
+                    total_amount += item.price_per_item * item.quantity
+
+            sale.total_amount = total_amount
+            sale.save()  # Save the updated total amount
+
             # Save the formset items
             for form in formset:
                 if form.cleaned_data:
@@ -139,10 +148,6 @@ def edit_sale(request, sale_id):
                         sale_item = form.save(commit=False)
                         sale_item.sales = sale
                         sale_item.save()
-
-            # Update the total amount for the sale after the changes
-            sale.total_amount = sum(item.price_per_item * item.quantity for item in sale.salesitem_set.all())
-            sale.save()
 
             messages.success(request, 'Sale has been updated successfully!')
             return redirect('sales:sales_list')
@@ -191,6 +196,33 @@ def sales_detail(request, sale_id):
         "sales_item_formset": sales_item_formset,
     })
 
+def add_invoice(request, sale_id):
+    sale = get_object_or_404(Sales, id=sale_id)
+
+    # Check if the invoice already exists
+    if hasattr(sale, 'invoice'):
+        messages.error(request, "An invoice already exists for this sale.")
+        return redirect('sales:sales_detail', sale_id=sale.id)
+
+    if request.method == "POST":
+        invoice_number = request.POST.get("invoice_number")
+        invoice_date = request.POST.get("invoice_date")
+        shipment_date = request.POST.get("shipment_date")
+        remarks = request.POST.get("remarks")
+
+        # Create the invoice
+        Invoice.objects.create(
+            sale=sale,
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            shipment_date=shipment_date,
+            remarks=remarks
+        )
+        messages.success(request, "Invoice added successfully!")
+        return redirect('sales:sales_detail', sale_id=sale.id)
+
+    return redirect('sales:sales_detail', sale_id=sale.id)
+
 # Update Sale Items
 def update_sale_items(request, sale_id):
     sale = get_object_or_404(Sales, id=sale_id)
@@ -210,6 +242,20 @@ def update_sale_items(request, sale_id):
         "sale": sale,
         "sales_item_formset": sales_item_formset,
     })
+
+def change_sales_status(request, pk):
+    sale = get_object_or_404(Sales, pk=pk)
+    
+    # Assuming the new status is sent as a POST parameter
+    new_status = request.POST.get('status')
+    if new_status in dict(Sales.SALES_STATUS_CHOICES):
+        sale.status = new_status
+        sale.save()
+        messages.success(request, f"Sales status updated to {new_status}.")
+    else:
+        messages.error(request, "Invalid status.")
+    
+    return redirect('sales:sales_list')
 
 def delete_sale_item(request, sale_id, item_id):
     sale = get_object_or_404(Sales, id=sale_id)
