@@ -1,5 +1,6 @@
 from django import forms
-from .models import Sales, SalesItem
+from .models import Sales, SalesItem, SalesReturn
+
 from inventory.models import Product
 from django.forms import modelformset_factory
 
@@ -48,6 +49,10 @@ class SalesItemForm(forms.ModelForm):
         
         return price
 
+class SalesReturnForm(forms.ModelForm):
+    class Meta:
+        model = SalesReturn
+        fields = ['return_code', 'quantity', 'date']
 
 # Formset for managing multiple SalesItems dynamically
 SalesItemFormSet = modelformset_factory(

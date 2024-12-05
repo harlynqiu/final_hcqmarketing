@@ -34,6 +34,10 @@ urlpatterns = [
     # Delete a sale item
     path('sales/<int:sale_id>/delete_item/<int:item_id>/', views.delete_sale_item, name='delete_sale_item'),
 
+    #change sales status
     path('<int:pk>/change-status/', views.change_sales_status, name='change_sales_status'),
+
+    path('sales-return/create/<int:sale_id>/', views.create_sales_return, name='create_sales_return'),  # Create a sales return
+    path('sales-return/list/', views.sales_return_list, name='sales_return_list'),  # List of sales returns
 ]
 

@@ -41,14 +41,16 @@
                                 {% for customer in customers %}
                                 <tr>
                                     <td>{{ customer.id }}</td>
+                                    <td>{{ customer.first_name }}</td>
+                                    <td>{{ customer.last_name }}</td>
+
                                     <td>
                                         <!-- Link to the customer's sales history -->
                                         <a href="{% url 'customer_sales_history' customer.id %}">
-                                            {{ customer.first_name }}
+                                        {{ customer.customer_hardware }}
                                         </a>
                                     </td>
-                                    <td>{{ customer.last_name }}</td>
-                                    <td>{{ customer.customer_hardware }}</td>
+
                                     <td>{{ customer.email }}</td>
                                     <td>{{ customer.address }}</td>
                                     <td>{{ customer.contact_num }}</td>
@@ -60,6 +62,9 @@
                                         <form action="{% url 'customer_edit' customer.id %}" method="get" style="display:inline;">
                                             <button type="submit" class="btn btn-warning btn-sm">Edit</button>
                                         </form>
+                                    </td>
+                                    
+                                    <td>
                                         <!-- Delete Button -->
                                         <form action="{% url 'delete_customer' customer.id %}" method="post" style="display:inline;">
                                             {% csrf_token %}

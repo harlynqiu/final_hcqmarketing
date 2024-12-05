@@ -40,6 +40,7 @@
                                         Add Invoice Details
                                     </button>
                                     {% endif %}
+                                    <a href="{% url 'sales:create_sales_return' sale.id %}" class="btn btn-warning">Create Sales Return</a> <!-- Sales Return Button -->
                                 </td>
                             </tr>
                             {% endfor %}
@@ -121,4 +122,5 @@
     </div>
 </div>
 {% endfor %}
+
 {% endblock %}

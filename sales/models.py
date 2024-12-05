@@ -116,3 +116,13 @@ class Invoice(models.Model):
     invoice_date = models.DateField()
     shipment_date = models.DateField()
     remarks = models.TextField(blank=True, null=True)
+
+
+class SalesReturn(models.Model):
+    return_code = models.CharField(max_length=100)
+    sales = models.ForeignKey(Sales, related_name="sales_returns", on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    date = models.DateField()
+
+    def __str__(self):
+        return f"Return for {self.sales.sales_code} ({self.return_code})"

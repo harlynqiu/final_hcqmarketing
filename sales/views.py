@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.forms import modelformset_factory
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from .forms import SalesReturnForm
 
 from inventory.models import Inventory
-from .models import Sales, SalesItem, Customer, Product, Invoice
+from .models import Sales, SalesItem, Customer, Product, Invoice, SalesReturn
+
 from .forms import SalesForm, SalesItemForm, SalesItemFormSet
 
 # Create Sale
@@ -270,3 +272,58 @@ def delete_sale_item(request, sale_id, item_id):
 
     messages.success(request, 'Sale item has been deleted successfully!')
     return redirect('sales:sales_detail', sale_id=sale.id)
+
+def sales_return_list(request):
+    # Fetch all the sales returns
+    returns = SalesReturn.objects.all()
+
+    context = {
+        'returns': returns
+    }
+    return render(request, 'sales/sales_return.html', context)
+
+# Create Sales Return
+def create_sales_return(request, sale_id):
+    sale = get_object_or_404(Sales, pk=sale_id)
+    
+    # Get the last return code for this sale and increment it
+    last_return = SalesReturn.objects.filter(sales=sale).order_by('-id').first()
+    if last_return:
+        last_return_number = int(last_return.return_code[3:])  # Extract number part after 'SAR'
+        new_return_code = f"SAR{last_return_number + 1:05d}"
+    else:
+        new_return_code = "SAR00001"  # Start with "SAR00001" if no returns exist for this sale
+
+    # Process the form submission
+    if request.method == "POST":
+        return_code = f"SAR{new_return_code[3:]}"  # Retain only numeric part after "SAR"
+        quantity = request.POST.get('quantity')
+        date = request.POST.get('date')
+        
+        # Create the sales return record
+        sales_return = SalesReturn(
+            return_code=new_return_code,
+            sales=sale,
+            quantity=quantity,
+            date=date
+        )
+        sales_return.save()
+
+        # Redirect after saving
+        return HttpResponseRedirect(reversed('sales:sales_list'))
+
+    context = {
+        'sale': sale,
+        'return_code': new_return_code
+    }
+    return render(request, 'sales/create_sales_return.html', context)
+
+# View to list all sales returns
+def sales_return_list(request):
+    returns = SalesReturn.objects.all()
+    return render(request, 'sales/sales_return_list.html', {'returns': returns})
+
+# Existing view for sales records
+def sales_list(request):
+    sales = Sales.objects.all()
+    return render(request, 'sales/index.html', {'sales': sales})
