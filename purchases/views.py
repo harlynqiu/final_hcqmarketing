@@ -5,77 +5,21 @@ from django.forms import modelformset_factory
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from datetime import datetime
-from .models import Purchase, PurchaseItem
-from .forms import PurchaseForm, PurchaseItemFormSet
+from .models import Purchase, PurchaseItem, PurchaseReturn, PurchaseReturnItem, Invoice
+from .forms import PurchaseForm, PurchaseItemFormSet, InvoiceForm, PurchaseReturnForm, PurchaseReturnItemFormSet
 from suppliers.models import Supplier
-from inventory.models import Inventory, StockHistory
-from .models import Invoice
-from .forms import InvoiceForm
-from .forms import PurchaseReturnForm, PurchaseReturnItemForm
-# In views.py
-
-from .models import PurchaseReturn, PurchaseReturnItem
-from .forms import PurchaseReturnForm, PurchaseReturnItemFormSet
-
-def purchase_return_list(request):
-    returns = PurchaseReturn.objects.all().order_by('-return_date')
-    return render(request, 'purchases/purchase_return.html', {'returns': returns})
-
-
-def create_purchase_return(request):
-    PurchaseReturnItemFormSet = modelformset_factory(
-        PurchaseReturnItem,
-        form=PurchaseReturnItemForm,
-        extra=1,
-        can_delete=True,
-    )
-
-    if request.method == "POST":
-        purchase_return_form = PurchaseReturnForm(request.POST)
-        formset = PurchaseReturnItemFormSet(request.POST, queryset=PurchaseReturnItem.objects.none())
-
-        if purchase_return_form.is_valid():
-            purchase_return = purchase_return_form.save(commit=False)
-            formset = PurchaseReturnItemFormSet(request.POST, queryset=PurchaseReturnItem.objects.none())
-            purchase_return.save()
-
-            for form in formset:
-                item_instance = form.save(commit=False)
-                item_instance.purchase_return = purchase_return
-                item_instance.clean()
-                item_instance.save()
-
-            return redirect("purchase_returns_list")  # Redirect after successful save
-    else:
-        purchase_return_form = PurchaseReturnForm()
-        formset = PurchaseReturnItemFormSet(queryset=PurchaseReturnItem.objects.none())
-
-    return render(
-        request,
-        "purchases/create_purchase_return.html",
-        {
-            "purchase_return_form": purchase_return_form,
-            "formset": formset,
-        },
-    )
-
+from inventory.models import Inventory, StockHistory, SerializedInventory
 
 def update_inventory_for_item(item, added_quantity, reverse=False):
-    """Adjust the inventory stock based on the delivered quantity.
-       If reverse=True, we subtract the delivered quantity, otherwise add it."""
+    """Adjust the inventory stock based on the delivered quantity."""
     inventory = item.inventory
-    current_stock = inventory.inventory_stock
-
     if reverse:
         # Subtract the delivered quantity to revert the change
         inventory.inventory_stock -= item.delivered_quantity
     else:
-        # Add the newly delivered quantity only if it hasn't been updated already
-        if current_stock + added_quantity != inventory.inventory_stock:
-            inventory.inventory_stock += added_quantity
-
+        # Add the newly delivered quantity
+        inventory.inventory_stock += added_quantity
     inventory.save()
-
 
 def log_stock_history(item, status, remarks, quantity):
     """Log stock history for the item."""
@@ -87,7 +31,6 @@ def log_stock_history(item, status, remarks, quantity):
         remarks=remarks
     )
 
-
 def add_purchase(request):
     if request.method == "POST":
         purchase_form = PurchaseForm(request.POST)
@@ -97,6 +40,8 @@ def add_purchase(request):
             try:
                 with transaction.atomic():
                     purchase = purchase_form.save(commit=False)
+                    purchase.status = 'Pending'
+                    
                     today = datetime.now().strftime("%Y%m%d")
                     latest_purchase = Purchase.objects.filter(purchase_code__startswith=f"PUR-{today}").order_by("id").last()
                     next_number = 1 if not latest_purchase else int(latest_purchase.purchase_code.split('-')[-1]) + 1
@@ -117,10 +62,7 @@ def add_purchase(request):
                     purchase.total_cost = total_cost
                     purchase.save()
 
-                    if purchase.status == 'Delivered':
-                        for item in purchase_items:
-                            update_inventory_for_item(item, item.quantity)
-
+                messages.success(request, f"Purchase {purchase.purchase_code} created successfully with status 'Pending'.")
                 return redirect('purchases:purchase_index')
 
             except IntegrityError as e:
@@ -142,134 +84,51 @@ def add_purchase(request):
         'inventories': inventories,
     })
 
+def change_purchase_status(request, purchase_id):
+    # Get the purchase object by its ID
+    purchase = get_object_or_404(Purchase, id=purchase_id)
 
-from inventory.models import SerializedInventory
-
-def change_purchase_status(request, id):
-    purchase = get_object_or_404(Purchase, id=id)
-
-    if request.method == 'POST':
+    if request.method == "POST":
+        # Get the new status from the form submission
         new_status = request.POST.get('status')
-        remarks = request.POST.get('remarks', '')  # Optional remarks field
 
-        try:
-            with transaction.atomic():
-                all_items_fully_delivered = True  # Flag to check if all items are fully delivered
+        # Update the purchase status
+        purchase.status = new_status
+        purchase.save()
 
-                if new_status == 'Pending':
-                    # Reset delivery for all items and revert inventory
-                    for item in purchase.items.all():
-                        if item.delivered_quantity > 0:
-                            update_inventory_for_item(item, -item.delivered_quantity, reverse=True)
-                            item.delivered_quantity = 0
-                            item.serial_numbers = ""  # Clear serial numbers
-                            item.save()
-                    purchase.status = 'Pending'
+        # Handle stock updates only when the status is 'Delivered'
+        if new_status == 'Delivered':
+            # Iterate over the items in the purchase
+            for item in purchase.items.all():
+                # Calculate the delivered quantity for the item
+                delivered_quantity = item.quantity - item.delivered_quantity
+                if delivered_quantity > 0:
+                    # Update the delivered quantity
+                    item.delivered_quantity += delivered_quantity
+                    item.save()
 
-                elif new_status == 'Partially Delivered':
-                    # Update delivery quantities for partial delivery
-                    for item in purchase.items.all():
-                        delivered_key = f"delivered_quantity_{item.id}"
-                        serial_numbers_key = f"serial_numbers_{item.id}"
+                    # Adjust the inventory stock
+                    inventory_item = item.inventory
+                    inventory_item.inventory_stock -= delivered_quantity  # Deduct from stock
 
-                        try:
-                            newly_delivered_quantity = int(request.POST.get(delivered_key, 0))
-                        except ValueError:
-                            messages.error(request, f"Invalid input for {item.inventory.product.product_name}.")
-                            all_items_fully_delivered = False
-                            continue
+                    inventory_item.save()
 
-                        remaining_quantity = item.quantity - item.delivered_quantity
+            # Add a success message to notify the user
+            messages.success(request, "Purchase status updated to 'Delivered' and stock has been adjusted.")
 
-                        if newly_delivered_quantity > remaining_quantity:
-                            messages.error(
-                                request,
-                                f"Cannot deliver more than remaining quantity for {item.inventory.product.product_name}. "
-                                f"Ordered: {item.quantity}, Already Delivered: {item.delivered_quantity}, Remaining: {remaining_quantity}."
-                            )
-                            all_items_fully_delivered = False
-                            continue
-                        elif newly_delivered_quantity < 0:
-                            messages.error(
-                                request,
-                                f"Invalid delivery quantity for {item.inventory.product.product_name}. Must be 0 or greater."
-                            )
-                            all_items_fully_delivered = False
-                            continue
-                        else:
-                            # Handle serial numbers only for serialized products
-                            if item.inventory.product.is_serialized:  # Assuming `is_serialized` is a boolean field in the product model
-                                serial_numbers = request.POST.get(serial_numbers_key, '').split(',')
-                                serial_numbers = [s.strip() for s in serial_numbers if s.strip()]
-                                if len(serial_numbers) != newly_delivered_quantity:
-                                    messages.error(
-                                        request,
-                                        f"Number of serial numbers provided ({len(serial_numbers)}) does not match "
-                                        f"the delivered quantity ({newly_delivered_quantity}) for {item.inventory.product.product_name}."
-                                    )
-                                    all_items_fully_delivered = False
-                                    continue
+        else:
+            # Handle non-stock updating status changes if needed (e.g., 'Pending', 'Partially Delivered', etc.)
+            messages.info(request, f"Purchase status updated to '{new_status}'.")
 
-                                # Create SerializedInventory records for each serial number
-                                for serial_number in serial_numbers:
-                                    # Save the serial number into the SerializedInventory model
-                                    SerializedInventory.objects.create(
-                                        inventory=item.inventory,
-                                        serial_number=serial_number,
-                                        status="Available"  # Or adjust status if needed
-                                    )
+        # Redirect to the purchase detail page or any other page you want
+        return redirect('purchases:purchase_index')
 
-                                # Add serial numbers to the item for record keeping (if needed)
-                                if item.serial_numbers:
-                                    item.serial_numbers += "," + ",".join(serial_numbers)
-                                else:
-                                    item.serial_numbers = ",".join(serial_numbers)
-
-                            # Update inventory and save changes
-                            update_inventory_for_item(item, newly_delivered_quantity)
-                            item.delivered_quantity += newly_delivered_quantity
-                            item.save()
-
-                            # Log stock history
-                            log_stock_history(item, 'Partially Delivered', remarks, newly_delivered_quantity)
-
-                        # Check if the current item is fully delivered
-                        if item.delivered_quantity < item.quantity:
-                            all_items_fully_delivered = False
-
-                    purchase.status = 'Delivered' if all_items_fully_delivered else 'Partially Delivered'
-
-                elif new_status == 'Delivered':
-                    # Ensure all items are fully delivered
-                    for item in purchase.items.all():
-                        if item.delivered_quantity < item.quantity:
-                            remaining_quantity = item.quantity - item.delivered_quantity
-                            update_inventory_for_item(item, remaining_quantity)
-                            item.delivered_quantity = item.quantity
-                            item.save()
-                            log_stock_history(item, 'Delivered', remarks, remaining_quantity)
-
-                    purchase.status = 'Delivered'
-
-                    # Inform user to add invoice details
-                    if not hasattr(purchase, 'invoice'):
-                        messages.info(request, "Status updated to Delivered. Please add invoice details.")
-
-                purchase.save()
-                messages.success(request, f"Purchase {purchase.purchase_code} status updated to {purchase.status}.")
-                return redirect('purchases:purchase_detail', purchase_id=purchase.id)
-
-        except Exception as e:
-            messages.error(request, f"Error updating status: {e}")
-
-    return redirect('purchases:purchase_detail', purchase_id=id)
-
+    return render(request, 'purchases/change_status.html', {'purchase': purchase})
 
 def add_invoice(request, purchase_id):
     purchase = get_object_or_404(Purchase, id=purchase_id)
 
     if request.method == 'POST':
-        # Save the invoice
         invoice_number = request.POST.get('invoice_number')
         invoice_date = request.POST.get('invoice_date')
         shipment_date = request.POST.get('shipment_date')
@@ -283,16 +142,85 @@ def add_invoice(request, purchase_id):
             remarks=remarks,
         )
         
-        # Redirect to purchase detail page after saving the invoice
         return redirect('purchases:purchase_detail', purchase_id=purchase.id)
 
     return render(request, 'purchases/add_invoice.html', {'purchase': purchase})
+
+def purchase_return_list(request):
+    returns = PurchaseReturn.objects.all().order_by('-return_date')
+    return render(request, 'purchases/purchase_return.html', {'returns': returns})
+
+def update_inventory_for_returned_item(item, returned_quantity):
+    """Adjust the inventory stock based on the returned quantity."""
+    inventory = item.item.inventory
+    inventory.inventory_stock -= returned_quantity  # Reduce stock for returned items
+    inventory.save()
+
+def log_return_stock_history(item, returned_quantity):
+    """Log stock history for the returned items."""
+    StockHistory.objects.create(
+        inventory=item.item.inventory,
+        purchase=item.item.purchase,
+        status='Returned',
+        delivered_quantity=-returned_quantity,  # Negative for returns
+        remarks=f"Returned {returned_quantity} units."
+    )
+
+def create_purchase_return(request):
+    if request.method == 'POST':
+        purchase_return_form = PurchaseReturnForm(request.POST)
+        purchase = None
+
+        if purchase_return_form.is_valid():
+            purchase = purchase_return_form.cleaned_data.get('purchase')
+
+        formset = PurchaseReturnItemFormSet(request.POST, form_kwargs={'purchase': purchase})
+
+        if formset.is_valid():
+            try:
+                with transaction.atomic():
+                    purchase_return = purchase_return_form.save(commit=False)
+                    purchase_return.save()
+
+                    total_returned_cost = 0
+                    for form in formset:
+                        return_item = form.save(commit=False)
+                        return_item.purchase_return = purchase_return
+                        return_item.save()
+
+                        # Adjust inventory and log return history
+                        update_inventory_for_returned_item(return_item, return_item.returned_quantity)
+                        log_return_stock_history(return_item, return_item.returned_quantity)
+
+                        total_returned_cost += return_item.returned_quantity * return_item.item.price
+
+                    purchase_return.total_returned_cost = total_returned_cost
+                    purchase_return.save()
+
+                    messages.success(request, f"Purchase return {purchase_return.id} created successfully.")
+                    return redirect('purchases:purchase_return_list')
+            except Exception as e:
+                messages.error(request, f"Error creating purchase return: {e}")
+
+    else:
+        purchase_return_form = PurchaseReturnForm()
+        formset = PurchaseReturnItemFormSet(queryset=PurchaseReturnItem.objects.none())
+
+    return render(request, 'purchases/create_purchase_return.html', {
+        'purchase_return_form': purchase_return_form,
+        'formset': formset
+    })
+
 def purchase_index(request):
-    purchases = Purchase.objects.annotate(product_count=Count('items'))
+    # Get all purchases or filter based on a condition
+    purchases = Purchase.objects.all()
+
+    # Add product_count for each purchase
     for purchase in purchases:
-        for item in purchase.items.all():
-            item.remaining_quantity = item.quantity - item.delivered_quantity
+        purchase.product_count = sum(item.quantity for item in purchase.items.all())
+
     return render(request, 'purchases/index.html', {'purchases': purchases})
+
 
 
 def purchase_detail(request, purchase_id):
@@ -313,19 +241,15 @@ def purchase_detail(request, purchase_id):
     })
 
 def get_items_for_purchase(request, purchase_id):
-    # Get the purchase object
-    purchase = Purchase.objects.get(id=purchase_id)
+    purchase = get_object_or_404(Purchase, id=purchase_id)
+    items = purchase.items.filter(delivered_quantity__gt=0)  # Ensure items have delivered quantity
 
-    # Get the items under this purchase
-    items = purchase.items.all()
-
-    # Prepare the data for the response
     data = {
-        'items': [
+        "items": [
             {
-                'id': item.id,
-                'name': item.inventory.product.product_name,  # Use product name if you want
-                'quantity_delivered': item.delivered_quantity,  # Use delivered quantity to limit return quantity
+                "id": item.id,
+                "name": item.inventory.product.product_name,
+                "delivered_quantity": item.delivered_quantity,  # Confirm correct field name
             }
             for item in items
         ]
