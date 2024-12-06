@@ -63,7 +63,7 @@ class Sales(models.Model):
         super().save(update_fields=['total_amount'])
 
     def __str__(self):
-        return f"Sale {self.sales_code} - {self.customer.customer_name}"
+        return f"Sale {self.sales_code} - {self.customer}"
 
 
 class SalesItem(models.Model):
