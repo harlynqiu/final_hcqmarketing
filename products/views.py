@@ -1,3 +1,5 @@
+from django.contrib import messages
+
 from django.shortcuts import render
 from django.shortcuts import HttpResponseRedirect
 from django.urls import reverse
@@ -69,3 +71,14 @@ def product_edit(request, product_id):
         form = ProductForm(instance=product)
 
     return render(request, 'products/product_edit.html', {'form': form})
+
+def delete_product(request, product_id):
+    # Get the product or return a 404 error if not found
+    product = get_object_or_404(Product, id=product_id)
+    
+    # Delete the product
+    product.delete()
+    
+    # Redirect to the product list page with a success message
+    messages.success(request, "Product deleted successfully")
+    return redirect('products_index')  # Make sure 'products_index' is the name of your product list URL

@@ -3,20 +3,26 @@ from products.models import Product  # Import the Product model from the product
 from customers.models import Customer 
 
 class Inventory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inventories')  # 'Product' will have a reverse relationship to 'Inventory'
-    customer_hardware = models.ForeignKey(Customer, on_delete=models.SET_DEFAULT, default=1)  # Use a default customer ID for inventory if none provided
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     inventory_stock = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"Inventory for {self.product.product_name} - {self.customer_hardware.customer_hardware}"  # Use customer hardware name in string representation
+        return f"Inventory for {self.product.product_name}"
 
+class SerializedInventory(models.Model):
+    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name='serialized_items')
+    serial_number = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=50, choices=(('Available', 'Available'), ('In Use', 'In Use'), ('Damaged', 'Damaged')), default='Available')
+
+    def __str__(self):
+        return f"{self.serial_number} ({self.inventory.product.product_name})"
 
 class StockHistory(models.Model):
-    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name="stock_history")  # Related to the Inventory
-    purchase = models.ForeignKey('purchases.Purchase', on_delete=models.CASCADE, related_name='stock_history')  # Reference to a Purchase
-    status = models.CharField(max_length=50)  # E.g., "Delivered", "Partially Delivered", etc.
+    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name="stock_history")
+    purchase = models.ForeignKey('purchases.Purchase', on_delete=models.CASCADE)  # String-based reference
+    status = models.CharField(max_length=50)  # "Delivered", "Partially Delivered", etc.
     delivered_quantity = models.PositiveIntegerField()
-    remarks = models.TextField(blank=True, null=True)  # Optional remarks
+    remarks = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
