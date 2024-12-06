@@ -204,7 +204,7 @@ def sales_list(request):
 # Sales Detail
 def sales_detail(request, sale_id):
     sale = get_object_or_404(Sales, id=sale_id)
-    items = sale.salesitem_set.all()
+    items = sale.items.all()
     return render(request, 'sales/sales_detail.html', {'sale': sale, 'items': items})
 
 # Edit Sale

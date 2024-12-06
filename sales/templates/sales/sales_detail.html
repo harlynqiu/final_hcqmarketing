@@ -10,16 +10,22 @@
                 <h5 class="card-title">Details for Sale: {{ sale.sales_code }}</h5>
             </div>
             <div class="card-body">
-                <!-- Editable Customer Field -->
-                <form method="POST" action="{% url 'sales:edit_customer' sale.id %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="customer" class="form-label"><strong>Customer:</strong></label>
-                        <input type="text" name="customer_hardware" id="customer" class="form-control" value="{{ sale.customer.customer_hardware }}">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Update Customer</button>
-                </form>
-
+                
+               
+                <p><strong>Customer:</strong> 
+                    {% if sale.walk_in_customer_name %}
+                        {{ sale.walk_in_customer_name }}
+                    {% elif sale.customer %}
+                        {% if sale.customer.customer_type == "Walk-in" %}
+                            {{ sale.customer.first_name }} {{ sale.customer.last_name }}
+                        {% else %}
+                            {{ sale.customer.customer_hardware }}
+                        {% endif %}
+                    {% else %}
+                        No customer assigned
+                    {% endif %}
+                </p>
+                
                 <p><strong>Date:</strong> {{ sale.date|date:"Y-m-d H:i" }}</p>
                 <p><strong>Status:</strong> {{ sale.status }}</p>
                 <p><strong>Payment Status:</strong> {{ sale.payment_stat }}</p>

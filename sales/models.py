@@ -15,7 +15,7 @@ class Sales(models.Model):
         ('Terms', 'Terms'),
     ]
 
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sales', null=True, blank=True)
     walk_in_customer_name = models.CharField(max_length=255, null=True, blank=True)
     date = models.DateTimeField(default=timezone.now)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
