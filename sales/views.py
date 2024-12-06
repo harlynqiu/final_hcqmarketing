@@ -185,9 +185,9 @@ def change_sale_status(request, sale_id):
         new_status = request.POST.get('status')
         sale.status = new_status
         sale.save()
-        return redirect('sales:sale_detail', sale_id=sale.id)
+        return redirect('sales:sales_detail', sale_id=sale.id)
     
-    return render(request, 'sales/sale_detail.html', {'sale': sale})
+    return render(request, 'sales/sales_detail.html', {'sale': sale})
 
 # Delete Sale
 def delete_sale(request, sale_id):
