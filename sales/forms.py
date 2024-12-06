@@ -58,5 +58,14 @@ SalesItemFormSet = modelformset_factory(
     can_delete=True
 )
 
+
 class WalkInCustomerForm(forms.Form):
-    customer_name = forms.CharField(max_length=100, required=True, label="Customer Name")
+    first_name = forms.CharField(max_length=50, required=True)
+    last_name = forms.CharField(max_length=50, required=True)
+    date = forms.DateTimeField(
+        widget=forms.TextInput(attrs={'type': 'datetime-local'}),
+        input_formats=['%Y-%m-%dT%H:%M'],
+        required=True
+    )
+    status = forms.ChoiceField(choices=[('Pending', 'Pending'), ('Completed', 'Completed')], required=True)
+    payment_stat = forms.ChoiceField(choices=[('Paid', 'Paid'), ('Unpaid', 'Unpaid')], required=True)

@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta, timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -7,8 +8,11 @@ from django.urls import reverse
 from .forms import SalesReturnForm, SalesForm, SalesItemForm, SalesItemFormSet, WalkInCustomerForm
 from inventory.models import Inventory
 from django.utils import timezone
-import logging
 from .models import Sales, SalesItem, Customer, Product, Invoice, SalesReturn
+from django.core.exceptions import ValidationError
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Create Sale
 def create_sale(request):
@@ -57,39 +61,76 @@ def create_sale(request):
         'inventories': Inventory.objects.all(),
     })
 
+# Walk-In Sale
 def walk_in_sale(request):
-    # Get all products
-    products = Product.objects.all()
-
     if request.method == 'POST':
-        sale_form = SalesForm(request.POST)
-        walk_in_form = WalkInCustomerForm(request.POST)
+        form = WalkInCustomerForm(request.POST)
+        if form.is_valid():
+            first_name = form.cleaned_data['first_name']
+            last_name = form.cleaned_data['last_name']
+            date = form.cleaned_data['date']
+            status = form.cleaned_data['status']
+            payment_stat = form.cleaned_data['payment_stat']
+            dateStart = timezone.now()
 
-        if sale_form.is_valid() and walk_in_form.is_valid():
-            # Save walk-in customer
-            customer_name = walk_in_form.cleaned_data['customer_name']
-            walk_in_customer, created = Customer.objects.get_or_create(
-                customer_hardware="Walk-In", first_name=customer_name, last_name=''
+            # Get or create the customer
+            customer, created = Customer.objects.get_or_create(
+                first_name=first_name,
+                last_name=last_name,
+                defaults={'dateStart': dateStart}
             )
 
-            # Now, set the walk-in customer explicitly in the SalesForm
-            sale = sale_form.save(commit=False)  # Do not save yet
-            sale.customer = walk_in_customer  # Set the customer for this sale
-            sale.save()  # Save the sale with the customer
+            # Log for debugging
+            logger.info(f"Form valid - Customer: {first_name} {last_name}, Date: {date}, Status: {status}, Payment: {payment_stat}")
+            
+            # Create the sale
+            sale = Sales.objects.create(
+                customer=customer,
+                date=date,
+                status=status,
+                payment_stat=payment_stat
+            )
 
-            # Optionally save purchased products
-            return redirect('sales:sales_list')  # Redirect to the sales list or another page
+            # If the customer is a walk-in, store the walk-in name.
+            if created:  # If the customer was created for this sale
+                sale.walk_in_customer_name = f"{first_name} {last_name}"
+                sale.save()
 
+
+            # Process selected products and quantities from form data
+            product_ids = request.POST.getlist('form-0-product')  # Get product IDs from form data
+            quantities = request.POST.getlist('form-0-quantity')  # Get quantities from form data
+
+            # Iterate through each product and quantity, create a SalesItem
+            for product_id, quantity in zip(product_ids, quantities):
+                product = Product.objects.get(id=product_id)  # Get the product
+                quantity = int(quantity)  # Convert quantity to integer
+
+                # Create the SalesItem record for each product
+                SalesItem.objects.create(
+                    sale=sale,
+                    product=product,
+                    quantity=quantity,
+                    price_per_item=product.product_price
+                )
+
+            # Update the total_amount after adding all sales items
+            sale.total_amount = sale.calculate_total_amount()
+            sale.save()
+
+            # Redirect to sales list
+            return redirect('sales:sales_list')
+        else:
+            # Log form errors if invalid
+            logger.error(f"Form errors: {form.errors}")
+            messages.error(request, 'Form is invalid. Please check the entered data.')
     else:
-        sale_form = SalesForm()  # Default form without a customer
-        walk_in_form = WalkInCustomerForm()
+        form = WalkInCustomerForm()
 
-    context = {
-        'sale_form': sale_form,
-        'walk_in_form': walk_in_form,
-        'products': products,
-    }
-    return render(request, 'sales/walk_in.html', context)
+    # Pass products to the template for product selection
+    products = Product.objects.all()
+
+    return render(request, 'sales/walk_in.html', {'form': form, 'products': products})
 
 # Get Products for Sale
 def get_products(request):
@@ -139,13 +180,14 @@ def delete_sale_item(request, sale_id, item_id):
 # Change Sales Status
 def change_sale_status(request, sale_id):
     sale = get_object_or_404(Sales, id=sale_id)
+    
     if request.method == 'POST':
         new_status = request.POST.get('status')
         sale.status = new_status
         sale.save()
-        messages.success(request, f'Sales status changed to {new_status}.')
-        return redirect('sales:sales_detail', sale_id=sale.id)
-    return redirect('sales:sales_list')
+        return redirect('sales:sale_detail', sale_id=sale.id)
+    
+    return render(request, 'sales/sale_detail.html', {'sale': sale})
 
 # Delete Sale
 def delete_sale(request, sale_id):
@@ -166,41 +208,18 @@ def sales_detail(request, sale_id):
     return render(request, 'sales/sales_detail.html', {'sale': sale, 'items': items})
 
 # Edit Sale
-def edit_sale(request, sale_id):
+def edit_customer(request, sale_id):
     sale = get_object_or_404(Sales, id=sale_id)
-    SaleItemFormSet = modelformset_factory(SalesItem, form=SalesItemForm, extra=1, can_delete=True)
-    sale_form = SalesForm(request.POST or None, instance=sale)
-    formset = SaleItemFormSet(request.POST or None, queryset=sale.salesitem_set.all())
 
     if request.method == 'POST':
-        if sale_form.is_valid() and formset.is_valid():
-            sale = sale_form.save(commit=False)
-            sale.save()
+        customer_hardware = request.POST.get('customer_hardware')  # Get the updated customer info
+        if customer_hardware:  # Check if the field is not empty
+            sale.customer.customer_hardware = customer_hardware
+            sale.customer.save()  # Save the updated customer details
+            return redirect('sales:sale_detail', sale_id=sale.id)  # Redirect back to the sale details page
 
-            total_amount = 0
-            for item in formset:
-                if item.cleaned_data and not item.cleaned_data.get('DELETE', False):
-                    sale_item = item.save(commit=False)
-                    sale_item.sale = sale
-                    sale_item.save()
+    return redirect('sales:sale_detail', sale_id=sale.id)  # Redirect if not POST (GET request or invalid form)
 
-            for item in sale.salesitem_set.all():
-                product = item.product
-                quantity_sold = item.quantity
-                inventory_item = Inventory.objects.get(product=product)
-                inventory_item.inventory_stock -= quantity_sold
-                inventory_item.save()
-
-            messages.success(request, 'Sale has been updated successfully.')
-            return redirect('sales:sales_detail', sale_id=sale.id)
-
-    return render(request, 'sales/edit_sale.html', {
-        'sale_form': sale_form,
-        'formset': formset,
-        'sale': sale,
-        'customers': Customer.objects.all(),
-        'products': Product.objects.all(),
-    })
 
 # Create Sales Return
 def create_sales_return(request, sale_id):

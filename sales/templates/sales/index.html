@@ -27,7 +27,15 @@
                             {% for sale in sales %}
                             <tr>
                                 <td><a href="{% url 'sales:sales_detail' sale.id %}">{{ sale.sales_code }}</a></td>
-                                <td>{{ sale.customer.customer_hardware }}</td>
+                                <td>
+                                    {% if sale.walk_in_customer_name %}
+                                        {{ sale.walk_in_customer_name }}  <!-- Show walk-in customer name -->
+                                    {% elif sale.walk_in_customer %}
+                                        {{ sale.walk_in_customer.first_name }} {{ sale.walk_in_customer.last_name }}  <!-- Show walk-in customer first and last name -->
+                                    {% else %}
+                                        {{ sale.customer.customer_hardware }}  <!-- Show regular customer name -->
+                                    {% endif %}
+                                </td>
                                 <td>{{ sale.date|date:"Y-m-d H:i" }}</td>
                                 <td>{{ sale.total_amount }}</td>
                                 <td><span>{{ sale.status }}</span></td>
